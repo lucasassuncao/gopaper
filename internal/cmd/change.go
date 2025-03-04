@@ -65,9 +65,8 @@ func ChangeCmd(g *models.Gopaper) *cobra.Command {
 		g.Logger.Info("Wallpaper Changed Successfully",
 			g.Logger.Args("category", selectedCategory.CategoryName),
 			g.Logger.Args("mode", selectedCategory.Mode),
-			g.Logger.Args("source", selectedCategory.Source),
-			g.Logger.Args("new", filepath.Join(selectedCategory.Source, selectedFile)),
-			g.Logger.Args("previous", previous),
+			g.Logger.Args("previous wallpaper", previous),
+			g.Logger.Args("new wallpaper", filepath.Join(selectedCategory.Source, selectedFile)),
 		)
 
 		return nil
