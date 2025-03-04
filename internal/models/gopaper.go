@@ -8,7 +8,6 @@ import (
 type Gopaper struct {
 	Logger          *pterm.Logger
 	Viper           *viper.Viper
-	CommandFlags    *CommandFlags
 	PersistentFlags *PersistentFlags
 	Categories      []*Categories
 }

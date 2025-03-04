@@ -57,19 +57,7 @@ type Category struct {
 }
 ```
 
-<a name="CommandFlags"></a>
-## type CommandFlags
 
-
-
-```go
-type CommandFlags struct {
-    Name    *string
-    Source  *string
-    Mode    *string
-    Enabled *bool
-}
-```
 
 <a name="Config"></a>
 ## type Config
