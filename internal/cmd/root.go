@@ -73,7 +73,7 @@ func setPersistentFlags(cmd *cobra.Command) *models.PersistentFlags {
 	return &models.PersistentFlags{
 		ShowCaller: cmd.PersistentFlags().Bool("show-caller", false, "Show caller information"),
 		LogLevel:   cmd.PersistentFlags().StringP("log-level", "l", "", "Specify the log level (trace, debug, info, warn/warning, error, fatal)"),
-		Output:     cmd.PersistentFlags().StringP("output", "o", "", "Specify the output (console, log/file or both)"),
+		Output:     cmd.PersistentFlags().StringP("output", "o", "", "Specify the output (console, log/file, both or none)"),
 	}
 }
 
