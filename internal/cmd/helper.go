@@ -77,6 +77,7 @@ func setWallpaperFromFile(source, file string) error {
 	return nil
 }
 
+// getPreviousWallpaper returns the path of the previous wallpaper.
 func getPreviousWallpaper() (string, error) {
 	return wallpaper.Get()
 }

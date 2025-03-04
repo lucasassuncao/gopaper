@@ -68,7 +68,7 @@ func NewConfig(path string) error {
 		return fmt.Errorf("failed to serialize yaml: %w", err)
 	}
 
-	if err := os.WriteFile(filepath.Join(path, "movelooper.yaml"), data, 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(path, "gopaper.yaml"), data, 0644); err != nil {
 		return fmt.Errorf("failed to generate base config file: %w", err)
 	}
 
