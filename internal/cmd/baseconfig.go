@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var interactive bool
+
 // BaseConfigCmd generates a base configuration file
 func BaseConfigCmd(m *models.Gopaper) *cobra.Command {
 	cmd := &cobra.Command{
@@ -50,7 +52,17 @@ func BaseConfigCmd(m *models.Gopaper) *cobra.Command {
 			m.Logger.Error("error creating directory for base config", m.Logger.Args("error", err))
 		}
 
-		err = models.NewConfig(path)
+		var options = []models.ConfigOption{}
+
+		if interactive {
+			options = append(options, models.WithOutput())
+			options = append(options, models.WithLogFile())
+			options = append(options, models.WithLogLevel())
+			options = append(options, models.WithShowCaller())
+
+		}
+
+		err = models.NewConfig(path, interactive, options...)
 		if err != nil {
 			m.Logger.Error("error creating base configuration file", m.Logger.Args("error", err))
 		}
@@ -58,6 +70,10 @@ func BaseConfigCmd(m *models.Gopaper) *cobra.Command {
 		m.Logger.Info("Base configuration file created", m.Logger.Args("path", path))
 
 		return nil
+
 	}
+
+	cmd.Flags().BoolVar(&interactive, "interactive", false, "Interactive mode for creating a base configuration file")
+
 	return cmd
 }
