@@ -15,14 +15,14 @@ linters:
     - nestif
     - nolintlint
     - stylecheck
-    - errcheck # Check for unchecked errors
+    - errcheck
     - lll
-    - govet # Go vet
-    - gosimple # Simplify code
-    - staticcheck # Advanced static analysis
+    - govet
+    - gosimple
+    - staticcheck
 
 run:
-  timeout: 15m # Set timeout
+  timeout: 15m
 
 linters-settings:
   lll:
