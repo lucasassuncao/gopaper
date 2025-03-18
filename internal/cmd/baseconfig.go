@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"gopaper/internal/helper"
 	"gopaper/internal/models"
 	"os"
 	"path/filepath"
@@ -47,7 +48,7 @@ func BaseConfigCmd(m *models.Gopaper) *cobra.Command {
 
 		path := filepath.Join(filepath.Dir(ex), "conf", "base")
 
-		err = createDirectory(path)
+		err = helper.CreateDirectory(path)
 		if err != nil {
 			m.Logger.Error("error creating directory for base config", m.Logger.Args("error", err))
 		}
@@ -59,6 +60,7 @@ func BaseConfigCmd(m *models.Gopaper) *cobra.Command {
 			options = append(options, models.WithLogFile())
 			options = append(options, models.WithLogLevel())
 			options = append(options, models.WithShowCaller())
+			options = append(options, models.WithCategory())
 
 		}
 

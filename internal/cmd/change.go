@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"gopaper/internal/config"
+	"gopaper/internal/helper"
 	"gopaper/internal/models"
 	"path/filepath"
 
@@ -37,30 +38,30 @@ func ChangeCmd(g *models.Gopaper) *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		g.Categories = config.UnmarshalConfig(g)
 
-		enabledCategories := getEnabledCategories(g.Categories)
-		selectedCategory := getRandomCategory(enabledCategories)
+		enabledCategories := helper.GetEnabledCategories(g.Categories)
+		selectedCategory := helper.GetRandomCategory(enabledCategories)
 
-		files, err := readDirectory(selectedCategory.Source)
+		files, err := helper.ReadDirectory(selectedCategory.Source)
 		if err != nil {
 			return fmt.Errorf("error reading directory: %v", err)
 		}
 
-		selectedFile, err := getRandomFile(files)
+		selectedFile, err := helper.GetRandomFile(files)
 		if err != nil {
 			return fmt.Errorf("error getting random file: %v", err)
 		}
 
-		previous, err := getPreviousWallpaper()
+		previous, err := helper.GetPreviousWallpaper()
 		if err != nil {
 			return fmt.Errorf("error getting previous wallpaper: %v", err)
 		}
 
-		err = setWallpaperFromFile(selectedCategory.Source, selectedFile)
+		err = helper.SetWallpaperFromFile(selectedCategory.Source, selectedFile)
 		if err != nil {
 			return fmt.Errorf("error setting wallpaper: %v", err)
 		}
 
-		setWallpaperMode(selectedCategory.Mode)
+		helper.SetWallpaperMode(selectedCategory.Mode)
 
 		g.Logger.Info("Wallpaper Changed Successfully",
 			g.Logger.Args("category", selectedCategory.CategoryName),
