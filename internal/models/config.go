@@ -133,6 +133,7 @@ func NewConfig(path string, interactive bool, configOptions ...ConfigOption) err
 		return fmt.Errorf("failed to generate base config file: %w", err)
 	}
 
+	clearScreen()
 	return nil
 }
 
