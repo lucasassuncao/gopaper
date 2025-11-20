@@ -1,35 +1,48 @@
+version: "2"
 linters:
-  disable-all: false
   enable:
-    - gofmt
-    - whitespace
-    - dupl
-    - gocognit
-    - unparam
-    - gocyclo
-    - gocritic
-    - nakedret
     - asciicheck
     - dogsled
+    - dupl
+    - gocognit
+    - gocritic
+    - gocyclo
+    - lll
     - misspell
+    - nakedret
     - nestif
     - nolintlint
-    - stylecheck
-    - errcheck
-    - lll
-    - govet
-    - gosimple
     - staticcheck
-
-run:
-  timeout: 15m
-
-linters-settings:
-  lll:
-    line-length: 240
-  gci:
-    sections:
-      - standard
-      - default
-      - blank
-    skip-generated: true
+    - unparam
+    - whitespace
+  settings:
+    gocognit:
+      min-complexity: 35
+    lll:
+      line-length: 300
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - blank
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

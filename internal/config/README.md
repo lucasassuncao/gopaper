@@ -13,6 +13,8 @@ import "gopaper/internal/config"
 - [func ConfigureLogger\(v \*viper.Viper\) \(\*pterm.Logger, error\)](<#ConfigureLogger>)
 - [func InitConfig\(v \*viper.Viper, options ...ViperOptions\) error](<#InitConfig>)
 - [func UnmarshalConfig\(m \*models.Gopaper\) \[\]\*models.Categories](<#UnmarshalConfig>)
+- [type ConfigFileNotFoundError](<#ConfigFileNotFoundError>)
+  - [func \(e ConfigFileNotFoundError\) Error\(\) string](<#ConfigFileNotFoundError.Error>)
 - [type ViperOptions](<#ViperOptions>)
   - [func WithConfigName\(name string\) ViperOptions](<#WithConfigName>)
   - [func WithConfigPath\(path string\) ViperOptions](<#WithConfigPath>)
@@ -35,7 +37,7 @@ func ConfigureLogger(v *viper.Viper) (*pterm.Logger, error)
 func InitConfig(v *viper.Viper, options ...ViperOptions) error
 ```
 
-InitConfig initializes Viper to read from movelooper.yaml
+InitConfig inicializa o Viper
 
 <a name="UnmarshalConfig"></a>
 ## func UnmarshalConfig
@@ -46,10 +48,30 @@ func UnmarshalConfig(m *models.Gopaper) []*models.Categories
 
 UnmarshalConfig unmarshals the config file into a struct
 
+<a name="ConfigFileNotFoundError"></a>
+## type ConfigFileNotFoundError
+
+ConfigFileNotFoundError é um erro personalizado para quando o arquivo de config não é encontrado.
+
+```go
+type ConfigFileNotFoundError struct {
+    Err error
+}
+```
+
+<a name="ConfigFileNotFoundError.Error"></a>
+### func \(ConfigFileNotFoundError\) Error
+
+```go
+func (e ConfigFileNotFoundError) Error() string
+```
+
+Error implements the error interface for ConfigFileNotFoundError
+
 <a name="ViperOptions"></a>
 ## type ViperOptions
 
-
+ViperOptions defines a function type for configuring Viper
 
 ```go
 type ViperOptions func(*viper.Viper)

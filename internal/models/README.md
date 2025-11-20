@@ -10,11 +10,15 @@ import "gopaper/internal/models"
 
 ## Index
 
-- [func NewConfig\(path string\) error](<#NewConfig>)
+- [func NewConfig\(path string, interactive bool, configOptions ...ConfigOption\) error](<#NewConfig>)
 - [type Categories](<#Categories>)
-- [type Category](<#Category>)
-- [type CommandFlags](<#CommandFlags>)
 - [type Config](<#Config>)
+- [type ConfigOption](<#ConfigOption>)
+  - [func WithCategory\(\) ConfigOption](<#WithCategory>)
+  - [func WithLogFile\(\) ConfigOption](<#WithLogFile>)
+  - [func WithLogLevel\(\) ConfigOption](<#WithLogLevel>)
+  - [func WithOutput\(\) ConfigOption](<#WithOutput>)
+  - [func WithShowCaller\(\) ConfigOption](<#WithShowCaller>)
 - [type Configuration](<#Configuration>)
 - [type Gopaper](<#Gopaper>)
 - [type PersistentFlags](<#PersistentFlags>)
@@ -24,7 +28,7 @@ import "gopaper/internal/models"
 ## func NewConfig
 
 ```go
-func NewConfig(path string) error
+func NewConfig(path string, interactive bool, configOptions ...ConfigOption) error
 ```
 
 
@@ -36,28 +40,12 @@ func NewConfig(path string) error
 
 ```go
 type Categories struct {
-    CategoryName string `mapstructure:"name"`
-    Source       string `mapstructure:"source"`
-    Mode         string `mapstructure:"mode"`
-    Enabled      bool   `mapstructure:"enabled"`
+    Name    string `yaml:"name" mapstructure:"name"`
+    Source  string `yaml:"source" mapstructure:"source"`
+    Mode    string `yaml:"mode" mapstructure:"mode"`
+    Enabled bool   `yaml:"enabled" mapstructure:"enabled"`
 }
 ```
-
-<a name="Category"></a>
-## type Category
-
-
-
-```go
-type Category struct {
-    Name    string `yaml:"name"`
-    Source  string `yaml:"source"`
-    Mode    string `yaml:"mode"`
-    Enabled bool   `yaml:"enabled"`
-}
-```
-
-
 
 <a name="Config"></a>
 ## type Config
@@ -67,9 +55,63 @@ type Category struct {
 ```go
 type Config struct {
     Configuration Configuration `yaml:"configuration"`
-    Categories    []Category    `yaml:"categories"`
+    Categories    []Categories  `yaml:"categories"`
 }
 ```
+
+<a name="ConfigOption"></a>
+## type ConfigOption
+
+
+
+```go
+type ConfigOption func(*Config)
+```
+
+<a name="WithCategory"></a>
+### func WithCategory
+
+```go
+func WithCategory() ConfigOption
+```
+
+
+
+<a name="WithLogFile"></a>
+### func WithLogFile
+
+```go
+func WithLogFile() ConfigOption
+```
+
+
+
+<a name="WithLogLevel"></a>
+### func WithLogLevel
+
+```go
+func WithLogLevel() ConfigOption
+```
+
+
+
+<a name="WithOutput"></a>
+### func WithOutput
+
+```go
+func WithOutput() ConfigOption
+```
+
+
+
+<a name="WithShowCaller"></a>
+### func WithShowCaller
+
+```go
+func WithShowCaller() ConfigOption
+```
+
+
 
 <a name="Configuration"></a>
 ## type Configuration
@@ -94,7 +136,6 @@ type Configuration struct {
 type Gopaper struct {
     Logger          *pterm.Logger
     Viper           *viper.Viper
-    CommandFlags    *CommandFlags
     PersistentFlags *PersistentFlags
     Categories      []*Categories
 }
