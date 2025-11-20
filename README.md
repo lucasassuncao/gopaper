@@ -1,5 +1,142 @@
 # Gopaper
 
+Gopaper is a small, cross-platform command-line tool written in Go that selects and sets a desktop wallpaper from user-defined categories. Each category points to a directory of images and controls how images are chosen and displayed.
+
+**Features**
+- Randomly selects a wallpaper from enabled categories
+- Supports multiple wallpaper display modes (crop, tile, stretch, span, fit, center)
+- Configurable logging and output
+- Generates a template `gopaper.yaml` configuration file
+
+**Note:** This README focuses on usage and configuration. For developer notes and code-level docs, check the source files under `internal/`.
+
+## Installation
+
+- Build from source (requires Go 1.20+):
+
+```pwsh
+go build -o gopaper ./...
+```
+
+- Or use the provided `Makefile` (if available):
+
+```pwsh
+make build
+```
+
+Place the produced binary in a folder that is in your `PATH`, or run it from the project directory.
+
+## Configuration
+
+Gopaper reads a YAML configuration file named `gopaper.yaml` (or another filename you specify with `-c/--config`). The config is composed of two main sections: `configuration` and `categories`.
+
+Example `gopaper.yaml`:
+
+```yaml
+configuration:
+  output: "both"        # one of: console, log, file, both
+  log-file: "C:\\logs\\gopaper.log"
+  log-level: "info"     # trace, debug, info, warn, error, fatal
+  show-caller: false
+
+categories:
+  - name: "default"
+    source: "C:\\wallpapers"
+    mode: "crop"        # crop, tile, stretch, span, fit, center
+    enabled: true
+  - name: "nature"
+    source: "D:/Images/Nature"
+    mode: "fit"
+    enabled: true
+```
+
+You can generate a base template file using the interactive generator built into the CLI (this will create `gopaper.yaml` in the current directory):
+
+```pwsh
+gopaper baseconfig
+```
+
+If you prefer to create the file manually, use the example above as a template.
+
+## Usage
+
+Basic run (uses default config lookup paths):
+
+```pwsh
+gopaper
+```
+
+Specify a config file explicitly:
+
+```pwsh
+gopaper -c C:\path\to\gopaper.yaml
+```
+
+The tool will:
+- Load configuration and categories
+- Select a random enabled category
+- Read files from the category source directory
+- Pick a random file and set it as the desktop wallpaper
+- Log the selected category, new wallpaper path, previous wallpaper (if available), and the mode used
+
+## Wallpaper Modes
+
+Supported wallpaper modes (these map to what the system API expects):
+- `crop`
+- `tile`
+- `stretch`
+- `span`
+- `fit`
+- `center`
+
+Choose the mode that best suits your screen and image aspect ratio.
+
+## Logging & Troubleshooting
+
+- If the CLI cannot find a config file it will return an error. You can specify a config path with `-c`.
+- Error handling behavior: the CLI logs contextual errors and returns wrapped errors to the caller. Check the log file (if configured) for details.
+- Common issues:
+  - Empty or missing categories: ensure at least one category has `enabled: true` and a valid `source` directory.
+  - Permission errors when writing logs or reading image files: run the binary with appropriate permissions.
+
+## Development
+
+- Project layout highlights:
+  - `internal/cmd` — CLI commands and command wiring
+  - `internal/config` — configuration helpers and viper integration
+  - `internal/helper` — wallpaper manipulation and utility functions
+  - `internal/models` — data structures and interactive config generation
+
+Run linter/tests locally:
+
+```pwsh
+go vet ./...
+go test ./...
+```
+
+## Examples
+
+- Create a base config interactively (will write `gopaper.yaml` to the current folder):
+
+```pwsh
+gopaper baseconfig
+```
+
+- Run using a custom config file:
+
+```pwsh
+gopaper -c C:\Users\lucas\configs\gopaper.yaml
+```
+
+## Contributing
+
+Contributions are welcome. Please fork the repository, make a branch for your feature or fix, and open a pull request.
+
+## License
+
+This project does not include a license file in the repository. If you want to publish it, add an appropriate `LICENSE` file.
+# Gopaper
+
 `gopaper` is a command-line tool (CLI) in Go designed to change the desktop wallpaper. It works as follows:
 
 ## Configuration:
