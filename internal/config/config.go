@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"gopaper/internal/models"
 	"log"
+
+	"github.com/lucasassuncao/gopaper/internal/models"
 
 	"github.com/spf13/viper"
 )

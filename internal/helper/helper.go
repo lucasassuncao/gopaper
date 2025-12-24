@@ -2,10 +2,11 @@ package helper
 
 import (
 	"fmt"
-	"gopaper/internal/models"
 	"math/rand"
 	"os"
 	"path/filepath"
+
+	"github.com/lucasassuncao/gopaper/internal/models"
 
 	"github.com/reujab/wallpaper"
 )

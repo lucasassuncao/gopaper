@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"gopaper/internal/config"
-	"gopaper/internal/helper"
-	"gopaper/internal/models"
 	"os"
 	"path/filepath"
+
+	"github.com/lucasassuncao/gopaper/internal/config"
+	"github.com/lucasassuncao/gopaper/internal/helper"
+	"github.com/lucasassuncao/gopaper/internal/models"
 
 	"github.com/spf13/cobra"
 )

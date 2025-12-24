@@ -1,4 +1,4 @@
-module gopaper
+module github.com/lucasassuncao/gopaper
 
 go 1.24.0
 

@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"gopaper/internal/cmd"
-	"gopaper/internal/models"
 	"os"
+
+	"github.com/lucasassuncao/gopaper/internal/cmd"
+	"github.com/lucasassuncao/gopaper/internal/models"
 
 	"github.com/spf13/viper"
 )
