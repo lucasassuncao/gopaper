@@ -127,22 +127,46 @@ func TestGetRandomFile_OnlyDirectories(t *testing.T) {
 	}
 }
 
-func TestGetRandomFile_ReturnsFile(t *testing.T) {
+func TestGetRandomFile_OnlyUnsupportedExtensions(t *testing.T) {
 	entries := []os.DirEntry{
-		mockDirEntry{name: "image.jpg", isDir: false},
+		mockDirEntry{name: "readme.txt", isDir: false},
+		mockDirEntry{name: "data.json", isDir: false},
+		mockDirEntry{name: "image.bmp", isDir: false},
 	}
-	name, err := GetRandomFile(entries)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if name != "image.jpg" {
-		t.Errorf("expected 'image.jpg', got '%s'", name)
+	_, err := GetRandomFile(entries)
+	if err == nil {
+		t.Error("expected error when no supported image files are present, got nil")
 	}
 }
 
-func TestGetRandomFile_NeverReturnsDirectory(t *testing.T) {
+func TestGetRandomFile_ReturnsImageFile(t *testing.T) {
+	for _, name := range []string{"image.jpg", "photo.jpeg", "wall.png", "bg.webp"} {
+		entries := []os.DirEntry{mockDirEntry{name: name, isDir: false}}
+		got, err := GetRandomFile(entries)
+		if err != nil {
+			t.Fatalf("unexpected error for %s: %v", name, err)
+		}
+		if got != name {
+			t.Errorf("expected '%s', got '%s'", name, got)
+		}
+	}
+}
+
+func TestGetRandomFile_CaseInsensitiveExtension(t *testing.T) {
+	entries := []os.DirEntry{
+		mockDirEntry{name: "wall.JPG", isDir: false},
+		mockDirEntry{name: "photo.PNG", isDir: false},
+	}
+	_, err := GetRandomFile(entries)
+	if err != nil {
+		t.Errorf("expected .JPG/.PNG to be accepted, got error: %v", err)
+	}
+}
+
+func TestGetRandomFile_NeverReturnsDirectoryOrUnsupported(t *testing.T) {
 	entries := []os.DirEntry{
 		mockDirEntry{name: "subdir", isDir: true},
+		mockDirEntry{name: "readme.txt", isDir: false},
 		mockDirEntry{name: "wallpaper.png", isDir: false},
 		mockDirEntry{name: "another.jpg", isDir: false},
 	}
@@ -151,8 +175,8 @@ func TestGetRandomFile_NeverReturnsDirectory(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if name == "subdir" {
-			t.Error("GetRandomFile returned a directory")
+		if name == "subdir" || name == "readme.txt" {
+			t.Errorf("GetRandomFile returned non-image entry: %s", name)
 		}
 	}
 }

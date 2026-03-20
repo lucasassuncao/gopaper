@@ -5,11 +5,20 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/lucasassuncao/gopaper/internal/models"
 
 	"github.com/reujab/wallpaper"
 )
+
+// imageExtensions holds the supported wallpaper file extensions.
+var imageExtensions = map[string]struct{}{
+	".jpg":  {},
+	".jpeg": {},
+	".png":  {},
+	".webp": {},
+}
 
 // CreateDirectory checks if the specified directory exists, and if not, creates it with full permissions.
 func CreateDirectory(dir string) error {
@@ -56,21 +65,26 @@ func GetRandomCategory(categories []*models.Categories) *models.Categories {
 	return categories[randomIndex]
 }
 
-// GetRandomFile returns a random file from the list of files, excluding directories.
+// GetRandomFile returns a random image file from the list of entries.
+// Directories and files with unsupported extensions are excluded.
 func GetRandomFile(files []os.DirEntry) (string, error) {
-	var regularFiles []os.DirEntry
+	var imageFiles []os.DirEntry
 	for _, f := range files {
-		if !f.IsDir() {
-			regularFiles = append(regularFiles, f)
+		if f.IsDir() {
+			continue
+		}
+		ext := strings.ToLower(filepath.Ext(f.Name()))
+		if _, ok := imageExtensions[ext]; ok {
+			imageFiles = append(imageFiles, f)
 		}
 	}
 
-	if len(regularFiles) == 0 {
-		return "", fmt.Errorf("no files found in the directory")
+	if len(imageFiles) == 0 {
+		return "", fmt.Errorf("no supported image files found in the directory (.jpg, .jpeg, .png, .webp)")
 	}
 
-	randomIndex := rand.Intn(len(regularFiles))
-	return regularFiles[randomIndex].Name(), nil
+	randomIndex := rand.Intn(len(imageFiles))
+	return imageFiles[randomIndex].Name(), nil
 }
 
 // SetWallpaperFromFile sets the wallpaper from the specified file.
