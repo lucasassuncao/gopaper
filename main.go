@@ -15,14 +15,8 @@ import (
 var version = "dev"
 
 func main() {
-	v := viper.GetViper()
-	if v == nil {
-		fmt.Println("viper couldn't be initialized")
-		return
-	}
-
 	m := &models.Gopaper{
-		Viper:      v,
+		Viper:      viper.GetViper(),
 		Logger:     nil,
 		Categories: make([]*models.Categories, 0),
 	}

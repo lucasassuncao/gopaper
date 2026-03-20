@@ -57,7 +57,10 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 				return fmt.Errorf("error getting random file: %w", err)
 			}
 
-			previous, _ := helper.GetPreviousWallpaper()
+			previous, err := helper.GetPreviousWallpaper()
+			if err != nil {
+				g.Logger.Warn("Could not get previous wallpaper", g.Logger.Args("error", err))
+			}
 
 			err = helper.SetWallpaperFromFile(selectedCategory.Source, selectedFile)
 			if err != nil {
