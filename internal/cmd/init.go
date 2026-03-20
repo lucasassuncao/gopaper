@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 
 	"github.com/lucasassuncao/gopaper/internal/helper"
 	"github.com/lucasassuncao/gopaper/internal/models"
@@ -89,7 +91,7 @@ The configuration file will be created at: <executable_dir>/conf/gopaper.yaml`,
 
 	cmd.Flags().BoolVarP(&initForce, "force", "f", false, "Overwrite existing configuration file")
 	cmd.Flags().BoolVarP(&initInteractive, "interactive", "i", false, "Interactive mode with prompts")
-	cmd.Flags().StringVarP(&initTemplate, "template", "t", "basic", "Template to use (basic, nature, mixed, full)")
+	cmd.Flags().StringVarP(&initTemplate, "template", "t", "basic", "Template to use (basic, full)")
 
 	return cmd
 }
@@ -233,7 +235,8 @@ func getDefaultCategory() models.Categories {
 // getTemplateConfig returns a predefined template configuration
 func getTemplateConfig(template string) *models.Config {
 	templates := map[string]func() *models.Config{
-		"full": getFullTemplate,
+		"basic": getBasicTemplate,
+		"full":  getFullTemplate,
 	}
 
 	templateFunc, exists := templates[template]
@@ -344,7 +347,7 @@ func getDefaultSourcePath(categoryName string) string {
 	if err != nil {
 		return filepath.Join("C:\\", "Users", "Public", "Pictures", "Walls", categoryName)
 	}
-	return filepath.Join(homeDir, "Imagens", "Walls", categoryName)
+	return filepath.Join(homeDir, "Pictures", "Walls", categoryName)
 }
 
 // getDefaultLogPath returns the default log file path
@@ -369,7 +372,14 @@ func printCategorySummary(category models.Categories) {
 	pterm.Printf("  Source:  %s\n", pterm.Yellow(category.Source))
 }
 
-// clearScreen clears the terminal screen
+// clearScreen clears the terminal screen based on the operating system
 func clearScreen() {
-	pterm.Println()
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/c", "cls")
+	} else {
+		cmd = exec.Command("clear")
+	}
+	cmd.Stdout = os.Stdout
+	_ = cmd.Run()
 }

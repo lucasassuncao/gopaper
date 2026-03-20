@@ -90,7 +90,6 @@ func preRunHandler(g *models.Gopaper, configPath string) error {
 	var options []config.ViperOptions
 
 	if configPath != "" {
-		// Se um caminho específico foi fornecido, use-o
 		dir := filepath.Dir(configPath)
 		filename := filepath.Base(configPath)
 		ext := filepath.Ext(filename)

@@ -11,7 +11,7 @@ import (
 // ViperOptions defines a function type for configuring Viper
 type ViperOptions func(*viper.Viper)
 
-// ConfigFileNotFoundError é um erro personalizado para quando o arquivo de config não é encontrado.
+// ConfigFileNotFoundError is a custom error for when the config file is not found.
 type ConfigFileNotFoundError struct {
 	Err error
 }
@@ -21,16 +21,15 @@ func (e ConfigFileNotFoundError) Error() string {
 	return fmt.Sprintf("config file not found: %v", e.Err)
 }
 
-// InitConfig inicializa o Viper
+// InitConfig initializes Viper with the provided options and reads the config file.
 func InitConfig(v *viper.Viper, options ...ViperOptions) error {
 	applyOptions(v, options...)
 
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Embrulha o erro de arquivo não encontrado com o nosso erro personalizado
 			return ConfigFileNotFoundError{Err: err}
 		}
-		return fmt.Errorf("não foi possível ler a config: %w", err)
+		return fmt.Errorf("could not read config: %w", err)
 	}
 	return nil
 }

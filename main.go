@@ -22,10 +22,9 @@ func main() {
 	}
 
 	m := &models.Gopaper{
-		Viper:           v,
-		Logger:          nil,
-		PersistentFlags: &models.PersistentFlags{},
-		Categories:      make([]*models.Categories, 0),
+		Viper:      v,
+		Logger:     nil,
+		Categories: make([]*models.Categories, 0),
 	}
 
 	root := cmd.RootCmd(m, version)
