@@ -13,10 +13,11 @@ import (
 )
 
 // RootCmd represents the base command when called without subcommands
-func RootCmd(g *models.Gopaper) *cobra.Command {
+func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "gopaper",
-		Short: "gopaper is a CLI tool to change wallpapers based on configurable categories.",
+		Use:     "gopaper",
+		Version: version,
+		Short:   "gopaper is a CLI tool to change wallpapers based on configurable categories.",
 		Long: `gopaper is a CLI tool to change wallpapers based on configurable categories.
 			It allows users to define categories with specific sources and modes, and randomly selects wallpapers from enabled categories.`,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
