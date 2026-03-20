@@ -75,8 +75,12 @@ func GetRandomFile(files []os.DirEntry) (string, error) {
 
 // SetWallpaperFromFile sets the wallpaper from the specified file.
 func SetWallpaperFromFile(source, file string) error {
-	err := wallpaper.SetFromFile(filepath.Join(source, file))
-	if err != nil {
+	return SetWallpaperFromPath(filepath.Join(source, file))
+}
+
+// SetWallpaperFromPath sets the wallpaper from a pre-built absolute path.
+func SetWallpaperFromPath(fullPath string) error {
+	if err := wallpaper.SetFromFile(fullPath); err != nil {
 		return fmt.Errorf("error setting wallpaper: %v", err)
 	}
 	return nil

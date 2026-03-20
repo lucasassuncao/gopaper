@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/lucasassuncao/gopaper/internal/config"
 	"github.com/lucasassuncao/gopaper/internal/helper"
+	"github.com/lucasassuncao/gopaper/internal/history"
 	"github.com/lucasassuncao/gopaper/internal/models"
 
 	"github.com/spf13/cobra"
@@ -73,9 +75,31 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 				return fmt.Errorf("error setting wallpaper mode: %w", err)
 			}
 
+			newWallpaper := filepath.Join(selectedCategory.Source, selectedFile)
+
+			histPath, err := history.DefaultPath()
+			if err != nil {
+				g.Logger.Warn("Could not determine history path", g.Logger.Args("error", err))
+			} else {
+				h, err := history.Load(histPath)
+				if err != nil {
+					g.Logger.Warn("Could not load history", g.Logger.Args("error", err))
+				} else {
+					history.Append(h, models.HistoryEntry{
+						Path:      newWallpaper,
+						Category:  selectedCategory.Name,
+						Mode:      selectedCategory.Mode,
+						Timestamp: time.Now(),
+					})
+					if err := history.Save(histPath, h); err != nil {
+						g.Logger.Warn("Could not save history", g.Logger.Args("error", err))
+					}
+				}
+			}
+
 			g.Logger.Info("Wallpaper changed successfully.",
 				g.Logger.Args("category", selectedCategory.Name),
-				g.Logger.Args("new wallpaper", filepath.Join(selectedCategory.Source, selectedFile)),
+				g.Logger.Args("new wallpaper", newWallpaper),
 				g.Logger.Args("previous wallpaper", previous),
 				g.Logger.Args("mode", selectedCategory.Mode),
 			)
@@ -84,6 +108,8 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 	}
 	cmd.Flags().StringP("config", "c", "", "Path to configuration file (e.g., /path/to/gopaper.yaml)")
 	cmd.AddCommand(InitCmd())
+	cmd.AddCommand(PrevCmd())
+	cmd.AddCommand(NextCmd())
 
 	return cmd
 }
