@@ -56,17 +56,21 @@ func GetRandomCategory(categories []*models.Categories) *models.Categories {
 	return categories[randomIndex]
 }
 
-// GetRandomFile returns a random file from the list of files.
+// GetRandomFile returns a random file from the list of files, excluding directories.
 func GetRandomFile(files []os.DirEntry) (string, error) {
-	filesCount := len(files)
-
-	switch filesCount {
-	case 0:
-		return "", fmt.Errorf("no files found in the directory")
-	default:
-		randomIndex := rand.Intn(filesCount)
-		return files[randomIndex].Name(), nil
+	var regularFiles []os.DirEntry
+	for _, f := range files {
+		if !f.IsDir() {
+			regularFiles = append(regularFiles, f)
+		}
 	}
+
+	if len(regularFiles) == 0 {
+		return "", fmt.Errorf("no files found in the directory")
+	}
+
+	randomIndex := rand.Intn(len(regularFiles))
+	return regularFiles[randomIndex].Name(), nil
 }
 
 // SetWallpaperFromFile sets the wallpaper from the specified file.
@@ -84,21 +88,21 @@ func GetPreviousWallpaper() (string, error) {
 }
 
 // SetWallpaperMode sets the wallpaper mode based on the user's preference.
-func SetWallpaperMode(mode string) {
+func SetWallpaperMode(mode string) error {
 	switch mode {
 	case "center":
-		wallpaper.SetMode(wallpaper.Center)
+		return wallpaper.SetMode(wallpaper.Center)
 	case "fit":
-		wallpaper.SetMode(wallpaper.Fit)
+		return wallpaper.SetMode(wallpaper.Fit)
 	case "span":
-		wallpaper.SetMode(wallpaper.Span)
+		return wallpaper.SetMode(wallpaper.Span)
 	case "stretch":
-		wallpaper.SetMode(wallpaper.Stretch)
+		return wallpaper.SetMode(wallpaper.Stretch)
 	case "tile":
-		wallpaper.SetMode(wallpaper.Tile)
+		return wallpaper.SetMode(wallpaper.Tile)
 	case "crop":
 		fallthrough
 	default:
-		wallpaper.SetMode(wallpaper.Crop)
+		return wallpaper.SetMode(wallpaper.Crop)
 	}
 }

@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/lucasassuncao/gopaper/internal/models"
 
@@ -65,11 +64,11 @@ func WithConfigPath(path string) ViperOptions {
 }
 
 // UnmarshalConfig unmarshals the config file into a struct
-func UnmarshalConfig(m *models.Gopaper) []*models.Categories {
+func UnmarshalConfig(m *models.Gopaper) ([]*models.Categories, error) {
 	var categories []*models.Categories
 	if err := m.Viper.UnmarshalKey("categories", &categories); err != nil {
-		log.Fatalf("Unable to decode into struct: %v", err)
+		return nil, fmt.Errorf("unable to decode config into struct: %w", err)
 	}
 
-	return categories
+	return categories, nil
 }

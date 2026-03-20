@@ -30,7 +30,11 @@ func RootCmd(g *models.Gopaper) *cobra.Command {
 
 			g.Logger.Info("Starting wallpaper change")
 
-			g.Categories = config.UnmarshalConfig(g)
+			categories, err := config.UnmarshalConfig(g)
+			if err != nil {
+				return err
+			}
+			g.Categories = categories
 
 			enabledCategories := helper.GetEnabledCategories(g.Categories)
 
@@ -43,7 +47,7 @@ func RootCmd(g *models.Gopaper) *cobra.Command {
 			files, err := helper.ReadDirectory(selectedCategory.Source)
 			if err != nil {
 				g.Logger.Error("error reading source directory.", g.Logger.Args("source", selectedCategory.Source, "error", err))
-				return fmt.Errorf("error reading directory.: %w", err)
+				return fmt.Errorf("error reading directory: %w", err)
 			}
 
 			selectedFile, err := helper.GetRandomFile(files)
@@ -60,7 +64,10 @@ func RootCmd(g *models.Gopaper) *cobra.Command {
 				return fmt.Errorf("error setting the wallpaper: %w", err)
 			}
 
-			helper.SetWallpaperMode(selectedCategory.Mode)
+			if err = helper.SetWallpaperMode(selectedCategory.Mode); err != nil {
+				g.Logger.Error("Error setting wallpaper mode", g.Logger.Args("error", err))
+				return fmt.Errorf("error setting wallpaper mode: %w", err)
+			}
 
 			g.Logger.Info("Wallpaper changed successfully.",
 				g.Logger.Args("category", selectedCategory.Name),
@@ -112,7 +119,7 @@ func preRunHandler(g *models.Gopaper, configPath string) error {
 		if configPath != "" {
 			return fmt.Errorf("configuration file not found at '%s'", configPath)
 		}
-		return fmt.Errorf("configuration file not found\n\nPlease run 'movelooper init' to create a configuration file")
+		return fmt.Errorf("configuration file not found\n\nPlease run 'gopaper init' to create a configuration file")
 	}
 
 	logger, err := config.ConfigureLogger(g.Viper)
