@@ -3,7 +3,7 @@ module github.com/lucasassuncao/gopaper
 go 1.26.3
 
 require (
-	github.com/lucasassuncao/yedit v0.2.0
+	github.com/lucasassuncao/yedit v0.2.1
 	github.com/pterm/pterm v0.12.80
 	github.com/reujab/wallpaper v0.0.0-20210630195606-5f9f655b3740
 	github.com/spf13/cobra v1.9.1
