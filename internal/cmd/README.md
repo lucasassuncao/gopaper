@@ -10,12 +10,21 @@ import "github.com/lucasassuncao/gopaper/internal/cmd"
 
 ## Index
 
+- [Variables](<#variables>)
 - [func EditCmd\(\) \*cobra.Command](<#EditCmd>)
 - [func InitCmd\(\) \*cobra.Command](<#InitCmd>)
 - [func NextCmd\(\) \*cobra.Command](<#NextCmd>)
 - [func PrevCmd\(\) \*cobra.Command](<#PrevCmd>)
 - [func RootCmd\(g \*models.Gopaper, version string\) \*cobra.Command](<#RootCmd>)
 
+
+## Variables
+
+<a name="DefaultRepo"></a>DefaultRepo is set at build time via ldflags.
+
+```go
+var DefaultRepo = ""
+```
 
 <a name="EditCmd"></a>
 ## func [EditCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit.go#L15>)

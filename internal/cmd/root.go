@@ -95,6 +95,7 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 	cmd.AddCommand(InitCmd())
 	cmd.AddCommand(PrevCmd())
 	cmd.AddCommand(NextCmd())
+	cmd.AddCommand(selfUpdateCmd(version))
 
 	return cmd
 }

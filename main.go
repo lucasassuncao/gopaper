@@ -7,6 +7,7 @@ import (
 
 	"github.com/lucasassuncao/gopaper/internal/cmd"
 	"github.com/lucasassuncao/gopaper/internal/models"
+	"github.com/lucasassuncao/gopaper/internal/updater"
 
 	"github.com/spf13/viper"
 )
@@ -15,6 +16,8 @@ import (
 var version = "dev"
 
 func main() {
+	updater.CleanOldBinary()
+
 	m := &models.Gopaper{
 		Viper:      viper.GetViper(),
 		Logger:     nil,

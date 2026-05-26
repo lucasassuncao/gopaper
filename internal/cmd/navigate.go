@@ -11,6 +11,8 @@ import (
 	"github.com/pterm/pterm"
 )
 
+var logger = pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
+
 // navigateHistory is the shared implementation for PrevCmd and NextCmd.
 // navigate is called on the loaded history to move the cursor;
 // boundaryErr is the sentinel returned when the cursor is already at the edge.
@@ -28,7 +30,7 @@ func navigateHistory(navigate func(*models.History) (models.HistoryEntry, error)
 	entry, err := navigate(h)
 	if err != nil {
 		if errors.Is(err, history.ErrHistoryEmpty) || errors.Is(err, boundaryErr) {
-			pterm.Warning.Println(err)
+			logger.Warn(err.Error())
 			return nil
 		}
 		return err
@@ -43,10 +45,11 @@ func navigateHistory(navigate func(*models.History) (models.HistoryEntry, error)
 	}
 
 	if err := history.Save(histPath, h); err != nil {
-		pterm.Warning.Printf("could not save history: %v\n", err)
+		logger.Warn("could not save history", logger.Args("error", err))
 	}
 
-	pterm.Success.Printf("Wallpaper set to: %s\n", entry.Path)
-	pterm.Info.Printf("Category: %s | Mode: %s\n", entry.Category, entry.Mode)
+	logger.Info("Wallpaper changed successfully.",
+		logger.Args("wallpaper", entry.Path, "category", entry.Category, "mode", entry.Mode),
+	)
 	return nil
 }
