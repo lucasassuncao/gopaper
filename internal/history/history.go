@@ -13,9 +13,9 @@ import (
 const defaultMaxEntries = 50
 
 var (
-	ErrHistoryEmpty   = errors.New("wallpaper history is empty")
-	ErrAlreadyOldest  = errors.New("already at the oldest wallpaper in history")
-	ErrAlreadyNewest  = errors.New("already at the most recent wallpaper in history")
+	ErrHistoryEmpty  = errors.New("wallpaper history is empty")
+	ErrAlreadyOldest = errors.New("already at the oldest wallpaper in history")
+	ErrAlreadyNewest = errors.New("already at the most recent wallpaper in history")
 )
 
 // DefaultPath returns the path to the history file, located in a "history"
@@ -30,7 +30,7 @@ func DefaultPath() (string, error) {
 
 // Load reads the history file from path. Returns an empty History if the file does not exist.
 func Load(path string) (*models.History, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) // #nosec G304 -- path is derived from os.Executable(), not user input
 	if os.IsNotExist(err) {
 		return &models.History{MaxEntries: defaultMaxEntries}, nil
 	}
@@ -52,7 +52,7 @@ func Load(path string) (*models.History, error) {
 
 // Save writes the history to path, creating parent directories as needed.
 func Save(path string, h *models.History) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
 		return fmt.Errorf("could not create history directory: %w", err)
 	}
 
@@ -61,7 +61,7 @@ func Save(path string, h *models.History) error {
 		return fmt.Errorf("could not serialize history: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		return fmt.Errorf("could not write history file: %w", err)
 	}
 

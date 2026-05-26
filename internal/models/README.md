@@ -5,36 +5,21 @@
 # models
 
 ```go
-import "gopaper/internal/models"
+import "github.com/lucasassuncao/gopaper/internal/models"
 ```
 
 ## Index
 
-- [func NewConfig\(path string, interactive bool, configOptions ...ConfigOption\) error](<#NewConfig>)
 - [type Categories](<#Categories>)
 - [type Config](<#Config>)
-- [type ConfigOption](<#ConfigOption>)
-  - [func WithCategory\(\) ConfigOption](<#WithCategory>)
-  - [func WithLogFile\(\) ConfigOption](<#WithLogFile>)
-  - [func WithLogLevel\(\) ConfigOption](<#WithLogLevel>)
-  - [func WithOutput\(\) ConfigOption](<#WithOutput>)
-  - [func WithShowCaller\(\) ConfigOption](<#WithShowCaller>)
 - [type Configuration](<#Configuration>)
 - [type Gopaper](<#Gopaper>)
-- [type PersistentFlags](<#PersistentFlags>)
-
-
-<a name="NewConfig"></a>
-## func NewConfig
-
-```go
-func NewConfig(path string, interactive bool, configOptions ...ConfigOption) error
-```
-
+- [type History](<#History>)
+- [type HistoryEntry](<#HistoryEntry>)
 
 
 <a name="Categories"></a>
-## type Categories
+## type [Categories](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L28-L33>)
 
 
 
@@ -48,7 +33,7 @@ type Categories struct {
 ```
 
 <a name="Config"></a>
-## type Config
+## type [Config](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L10-L13>)
 
 
 
@@ -59,62 +44,8 @@ type Config struct {
 }
 ```
 
-<a name="ConfigOption"></a>
-## type ConfigOption
-
-
-
-```go
-type ConfigOption func(*Config)
-```
-
-<a name="WithCategory"></a>
-### func WithCategory
-
-```go
-func WithCategory() ConfigOption
-```
-
-
-
-<a name="WithLogFile"></a>
-### func WithLogFile
-
-```go
-func WithLogFile() ConfigOption
-```
-
-
-
-<a name="WithLogLevel"></a>
-### func WithLogLevel
-
-```go
-func WithLogLevel() ConfigOption
-```
-
-
-
-<a name="WithOutput"></a>
-### func WithOutput
-
-```go
-func WithOutput() ConfigOption
-```
-
-
-
-<a name="WithShowCaller"></a>
-### func WithShowCaller
-
-```go
-func WithShowCaller() ConfigOption
-```
-
-
-
 <a name="Configuration"></a>
-## type Configuration
+## type [Configuration](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L15-L20>)
 
 
 
@@ -128,29 +59,42 @@ type Configuration struct {
 ```
 
 <a name="Gopaper"></a>
-## type Gopaper
+## type [Gopaper](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L22-L26>)
 
 
 
 ```go
 type Gopaper struct {
-    Logger          *pterm.Logger
-    Viper           *viper.Viper
-    PersistentFlags *PersistentFlags
-    Categories      []*Categories
+    Logger     *pterm.Logger
+    Viper      *viper.Viper
+    Categories []*Categories
 }
 ```
 
-<a name="PersistentFlags"></a>
-## type PersistentFlags
+<a name="History"></a>
+## type [History](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L46-L50>)
 
-
+History is the persistent navigation state for wallpaper history. Entries are stored newest\-first \(index 0 = most recently applied\). CurrentIndex tracks which entry is currently displayed.
 
 ```go
-type PersistentFlags struct {
-    Output     *string
-    LogLevel   *string
-    ShowCaller *bool
+type History struct {
+    Entries      []HistoryEntry `json:"entries"`
+    CurrentIndex int            `json:"current_index"`
+    MaxEntries   int            `json:"max_entries"`
+}
+```
+
+<a name="HistoryEntry"></a>
+## type [HistoryEntry](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L36-L41>)
+
+HistoryEntry represents a single wallpaper that was applied.
+
+```go
+type HistoryEntry struct {
+    Path      string    `json:"path"`
+    Category  string    `json:"category"`
+    Mode      string    `json:"mode"`
+    Timestamp time.Time `json:"timestamp"`
 }
 ```
 

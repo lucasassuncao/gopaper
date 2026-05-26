@@ -77,24 +77,8 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 
 			newWallpaper := filepath.Join(selectedCategory.Source, selectedFile)
 
-			histPath, err := history.DefaultPath()
-			if err != nil {
-				g.Logger.Warn("Could not determine history path", g.Logger.Args("error", err))
-			} else {
-				h, err := history.Load(histPath)
-				if err != nil {
-					g.Logger.Warn("Could not load history", g.Logger.Args("error", err))
-				} else {
-					history.Append(h, models.HistoryEntry{
-						Path:      newWallpaper,
-						Category:  selectedCategory.Name,
-						Mode:      selectedCategory.Mode,
-						Timestamp: time.Now(),
-					})
-					if err := history.Save(histPath, h); err != nil {
-						g.Logger.Warn("Could not save history", g.Logger.Args("error", err))
-					}
-				}
+			if err := recordHistory(newWallpaper, selectedCategory); err != nil {
+				g.Logger.Warn("Could not record history", g.Logger.Args("error", err))
 			}
 
 			g.Logger.Info("Wallpaper changed successfully.",
@@ -107,6 +91,7 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringP("config", "c", "", "Path to configuration file (e.g., /path/to/gopaper.yaml)")
+	cmd.AddCommand(EditCmd())
 	cmd.AddCommand(InitCmd())
 	cmd.AddCommand(PrevCmd())
 	cmd.AddCommand(NextCmd())
@@ -159,4 +144,23 @@ func preRunHandler(g *models.Gopaper, configPath string) error {
 	g.Logger = logger
 
 	return nil
+}
+
+// recordHistory appends the current wallpaper to the persistent history file.
+func recordHistory(wallpaper string, cat *models.Categories) error {
+	histPath, err := history.DefaultPath()
+	if err != nil {
+		return err
+	}
+	h, err := history.Load(histPath)
+	if err != nil {
+		return err
+	}
+	history.Append(h, models.HistoryEntry{
+		Path:      wallpaper,
+		Category:  cat.Name,
+		Mode:      cat.Mode,
+		Timestamp: time.Now(),
+	})
+	return history.Save(histPath, h)
 }

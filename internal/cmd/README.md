@@ -5,17 +5,29 @@
 # cmd
 
 ```go
-import "gopaper/internal/cmd"
+import "github.com/lucasassuncao/gopaper/internal/cmd"
 ```
 
 ## Index
 
+- [func EditCmd\(\) \*cobra.Command](<#EditCmd>)
 - [func InitCmd\(\) \*cobra.Command](<#InitCmd>)
-- [func RootCmd\(g \*models.Gopaper\) \*cobra.Command](<#RootCmd>)
+- [func NextCmd\(\) \*cobra.Command](<#NextCmd>)
+- [func PrevCmd\(\) \*cobra.Command](<#PrevCmd>)
+- [func RootCmd\(g \*models.Gopaper, version string\) \*cobra.Command](<#RootCmd>)
 
+
+<a name="EditCmd"></a>
+## func [EditCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit.go#L15>)
+
+```go
+func EditCmd() *cobra.Command
+```
+
+EditCmd returns the "edit" command, which opens an interactive TUI editor for the gopaper configuration file.
 
 <a name="InitCmd"></a>
-## func InitCmd
+## func [InitCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/init.go#L25>)
 
 ```go
 func InitCmd() *cobra.Command
@@ -23,11 +35,29 @@ func InitCmd() *cobra.Command
 
 InitCmd generates a configuration file
 
-<a name="RootCmd"></a>
-## func RootCmd
+<a name="NextCmd"></a>
+## func [NextCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/next.go#L9>)
 
 ```go
-func RootCmd(g *models.Gopaper) *cobra.Command
+func NextCmd() *cobra.Command
+```
+
+NextCmd sets the next \(more recent\) wallpaper from history.
+
+<a name="PrevCmd"></a>
+## func [PrevCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/prev.go#L9>)
+
+```go
+func PrevCmd() *cobra.Command
+```
+
+PrevCmd sets the previous wallpaper from history.
+
+<a name="RootCmd"></a>
+## func [RootCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/root.go#L18>)
+
+```go
+func RootCmd(g *models.Gopaper, version string) *cobra.Command
 ```
 
 RootCmd represents the base command when called without subcommands

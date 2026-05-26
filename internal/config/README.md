@@ -5,14 +5,14 @@
 # config
 
 ```go
-import "gopaper/internal/config"
+import "github.com/lucasassuncao/gopaper/internal/config"
 ```
 
 ## Index
 
 - [func ConfigureLogger\(v \*viper.Viper\) \(\*pterm.Logger, error\)](<#ConfigureLogger>)
 - [func InitConfig\(v \*viper.Viper, options ...ViperOptions\) error](<#InitConfig>)
-- [func UnmarshalConfig\(m \*models.Gopaper\) \[\]\*models.Categories](<#UnmarshalConfig>)
+- [func UnmarshalConfig\(m \*models.Gopaper\) \(\[\]\*models.Categories, error\)](<#UnmarshalConfig>)
 - [type ConfigFileNotFoundError](<#ConfigFileNotFoundError>)
   - [func \(e ConfigFileNotFoundError\) Error\(\) string](<#ConfigFileNotFoundError.Error>)
 - [type ViperOptions](<#ViperOptions>)
@@ -22,7 +22,7 @@ import "gopaper/internal/config"
 
 
 <a name="ConfigureLogger"></a>
-## func ConfigureLogger
+## func [ConfigureLogger](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/logging.go#L13>)
 
 ```go
 func ConfigureLogger(v *viper.Viper) (*pterm.Logger, error)
@@ -31,27 +31,27 @@ func ConfigureLogger(v *viper.Viper) (*pterm.Logger, error)
 
 
 <a name="InitConfig"></a>
-## func InitConfig
+## func [InitConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L25>)
 
 ```go
 func InitConfig(v *viper.Viper, options ...ViperOptions) error
 ```
 
-InitConfig inicializa o Viper
+InitConfig initializes Viper with the provided options and reads the config file.
 
 <a name="UnmarshalConfig"></a>
-## func UnmarshalConfig
+## func [UnmarshalConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L66>)
 
 ```go
-func UnmarshalConfig(m *models.Gopaper) []*models.Categories
+func UnmarshalConfig(m *models.Gopaper) ([]*models.Categories, error)
 ```
 
 UnmarshalConfig unmarshals the config file into a struct
 
 <a name="ConfigFileNotFoundError"></a>
-## type ConfigFileNotFoundError
+## type [ConfigFileNotFoundError](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L15-L17>)
 
-ConfigFileNotFoundError é um erro personalizado para quando o arquivo de config não é encontrado.
+ConfigFileNotFoundError is a custom error for when the config file is not found.
 
 ```go
 type ConfigFileNotFoundError struct {
@@ -60,7 +60,7 @@ type ConfigFileNotFoundError struct {
 ```
 
 <a name="ConfigFileNotFoundError.Error"></a>
-### func \(ConfigFileNotFoundError\) Error
+### func \(ConfigFileNotFoundError\) [Error](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L20>)
 
 ```go
 func (e ConfigFileNotFoundError) Error() string
@@ -69,7 +69,7 @@ func (e ConfigFileNotFoundError) Error() string
 Error implements the error interface for ConfigFileNotFoundError
 
 <a name="ViperOptions"></a>
-## type ViperOptions
+## type [ViperOptions](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L12>)
 
 ViperOptions defines a function type for configuring Viper
 
@@ -78,7 +78,7 @@ type ViperOptions func(*viper.Viper)
 ```
 
 <a name="WithConfigName"></a>
-### func WithConfigName
+### func [WithConfigName](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L45>)
 
 ```go
 func WithConfigName(name string) ViperOptions
@@ -87,7 +87,7 @@ func WithConfigName(name string) ViperOptions
 WithConfigName sets the name of the config file
 
 <a name="WithConfigPath"></a>
-### func WithConfigPath
+### func [WithConfigPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L59>)
 
 ```go
 func WithConfigPath(path string) ViperOptions
@@ -96,7 +96,7 @@ func WithConfigPath(path string) ViperOptions
 WithConfigPath sets the path of the config file
 
 <a name="WithConfigType"></a>
-### func WithConfigType
+### func [WithConfigType](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L52>)
 
 ```go
 func WithConfigType(configType string) ViperOptions

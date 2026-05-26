@@ -116,7 +116,7 @@ func TestNext_MovesToNewerEntry(t *testing.T) {
 	Append(h, entry("b.jpg"))
 	// Entries: [b, a], CurrentIndex=0
 
-	Prev(h) // move to index 1 (a.jpg)
+	_, _ = Prev(h) // move to index 1 (a.jpg)
 
 	got, err := Next(h)
 	if err != nil {

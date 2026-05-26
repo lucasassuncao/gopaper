@@ -5,7 +5,7 @@
 # helper
 
 ```go
-import "gopaper/internal/helper"
+import "github.com/lucasassuncao/gopaper/internal/helper"
 ```
 
 ## Index
@@ -17,11 +17,12 @@ import "gopaper/internal/helper"
 - [func GetRandomFile\(files \[\]os.DirEntry\) \(string, error\)](<#GetRandomFile>)
 - [func ReadDirectory\(path string\) \(\[\]os.DirEntry, error\)](<#ReadDirectory>)
 - [func SetWallpaperFromFile\(source, file string\) error](<#SetWallpaperFromFile>)
-- [func SetWallpaperMode\(mode string\)](<#SetWallpaperMode>)
+- [func SetWallpaperFromPath\(fullPath string\) error](<#SetWallpaperFromPath>)
+- [func SetWallpaperMode\(mode string\) error](<#SetWallpaperMode>)
 
 
 <a name="CreateDirectory"></a>
-## func CreateDirectory
+## func [CreateDirectory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L24>)
 
 ```go
 func CreateDirectory(dir string) error
@@ -30,7 +31,7 @@ func CreateDirectory(dir string) error
 CreateDirectory checks if the specified directory exists, and if not, creates it with full permissions.
 
 <a name="GetEnabledCategories"></a>
-## func GetEnabledCategories
+## func [GetEnabledCategories](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L47>)
 
 ```go
 func GetEnabledCategories(categories []*models.Categories) []*models.Categories
@@ -39,7 +40,7 @@ func GetEnabledCategories(categories []*models.Categories) []*models.Categories
 GetEnabledCategories returns a list of enabled categories from the list of categories.
 
 <a name="GetPreviousWallpaper"></a>
-## func GetPreviousWallpaper
+## func [GetPreviousWallpaper](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L104>)
 
 ```go
 func GetPreviousWallpaper() (string, error)
@@ -48,7 +49,7 @@ func GetPreviousWallpaper() (string, error)
 GetPreviousWallpaper returns the path of the previous wallpaper.
 
 <a name="GetRandomCategory"></a>
-## func GetRandomCategory
+## func [GetRandomCategory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L58>)
 
 ```go
 func GetRandomCategory(categories []*models.Categories) *models.Categories
@@ -57,16 +58,16 @@ func GetRandomCategory(categories []*models.Categories) *models.Categories
 GetRandomCategory returns a random category from the list of categories.
 
 <a name="GetRandomFile"></a>
-## func GetRandomFile
+## func [GetRandomFile](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L70>)
 
 ```go
 func GetRandomFile(files []os.DirEntry) (string, error)
 ```
 
-GetRandomFile returns a random file from the list of files.
+GetRandomFile returns a random image file from the list of entries. Directories and files with unsupported extensions are excluded.
 
 <a name="ReadDirectory"></a>
-## func ReadDirectory
+## func [ReadDirectory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L37>)
 
 ```go
 func ReadDirectory(path string) ([]os.DirEntry, error)
@@ -75,7 +76,7 @@ func ReadDirectory(path string) ([]os.DirEntry, error)
 ReadDirectory reads the contents of a given directory and returns the files.
 
 <a name="SetWallpaperFromFile"></a>
-## func SetWallpaperFromFile
+## func [SetWallpaperFromFile](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L91>)
 
 ```go
 func SetWallpaperFromFile(source, file string) error
@@ -83,11 +84,20 @@ func SetWallpaperFromFile(source, file string) error
 
 SetWallpaperFromFile sets the wallpaper from the specified file.
 
-<a name="SetWallpaperMode"></a>
-## func SetWallpaperMode
+<a name="SetWallpaperFromPath"></a>
+## func [SetWallpaperFromPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L96>)
 
 ```go
-func SetWallpaperMode(mode string)
+func SetWallpaperFromPath(fullPath string) error
+```
+
+SetWallpaperFromPath sets the wallpaper from a pre\-built absolute path.
+
+<a name="SetWallpaperMode"></a>
+## func [SetWallpaperMode](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L109>)
+
+```go
+func SetWallpaperMode(mode string) error
 ```
 
 SetWallpaperMode sets the wallpaper mode based on the user's preference.

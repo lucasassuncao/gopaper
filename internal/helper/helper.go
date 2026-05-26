@@ -24,7 +24,7 @@ var imageExtensions = map[string]struct{}{
 func CreateDirectory(dir string) error {
 	_, err := os.Stat(dir)
 	if os.IsNotExist(err) {
-		err := os.MkdirAll(dir, 0755)
+		err := os.MkdirAll(dir, 0750)
 		if err != nil {
 			return err
 		}
@@ -61,7 +61,7 @@ func GetRandomCategory(categories []*models.Categories) *models.Categories {
 		return nil
 	}
 
-	randomIndex := rand.Intn(categoriesCount)
+	randomIndex := rand.Intn(categoriesCount) // #nosec G404 -- non-security random selection
 	return categories[randomIndex]
 }
 
@@ -83,7 +83,7 @@ func GetRandomFile(files []os.DirEntry) (string, error) {
 		return "", fmt.Errorf("no supported image files found in the directory (.jpg, .jpeg, .png, .webp)")
 	}
 
-	randomIndex := rand.Intn(len(imageFiles))
+	randomIndex := rand.Intn(len(imageFiles)) // #nosec G404 -- non-security random selection
 	return imageFiles[randomIndex].Name(), nil
 }
 
