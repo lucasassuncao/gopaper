@@ -10,6 +10,17 @@ Gopaper is a small, cross-platform command-line tool written in Go that selects 
 
 **Note:** This README focuses on usage and configuration. For developer notes and code-level docs, check the source files under `internal/`.
 
+## Documentation
+
+- [Getting Started](docs/GETTING-STARTED.md) — install, first config, first run
+- [Configuration Reference](docs/CONFIGURATION.md) — full `gopaper.yaml` schema
+- [Filters](docs/FILTERS.md) — narrowing which files a category picks from
+- [Commands](docs/COMMANDS.md) — every command and flag
+- [Interactive Config Editor](docs/EDIT.md) — `gopaper edit` walkthrough
+- [Troubleshooting](docs/TROUBLESHOOTING.md) — common errors and fixes
+
+Contributing? See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Installation
 
 - Build from source (requires Go 1.20+):
@@ -28,16 +39,21 @@ Place the produced binary in a folder that is in your `PATH`, or run it from the
 
 ## Configuration
 
-Gopaper reads a YAML configuration file named `gopaper.yaml` (or another filename you specify with `-c/--config`). The config is composed of two main sections: `configuration` and `categories`.
+Gopaper reads a YAML configuration file named `gopaper.yaml` (or another filename you specify with `-c/--config`). The config is composed of two main sections: `configuration` and `categories`. `configuration` is further split into `logging` and `history` sub-sections.
 
 Example `gopaper.yaml`:
 
 ```yaml
 configuration:
-  output: "both"        # one of: console, log, file, both
-  log-file: "C:\\logs\\gopaper.log"
-  log-level: "info"     # trace, debug, info, warn, error, fatal
-  show-caller: false
+  logging:
+    output: "both"        # one of: console, log, file, both, none
+    file: "C:\\logs\\gopaper.log"
+    level: "info"         # trace, debug, info, warn, error, fatal
+    show-caller: false
+  history:
+    limit: 50             # max wallpapers kept for prev/next (default: 50)
+    file: ""              # defaults to <executable_dir>/history/gopaper.json
+    enabled: true          # set to false to disable prev/next history recording
 
 categories:
   - name: "default"
@@ -48,15 +64,61 @@ categories:
     source: "D:/Images/Nature"
     mode: "fit"
     enabled: true
+    filter:              # optional: narrow which files in source are eligible
+      match:
+        glob: "landscape_*"   # literal | regex | glob (mutually exclusive)
+      age:
+        max: 720h              # only files modified in the last 30 days
+      size:
+        min: "500KB"
 ```
 
-You can generate a base template file using the interactive generator built into the CLI (this will create `gopaper.yaml` in the current directory):
+### Filtering files within a category
+
+Each category may set an optional `filter` to narrow eligible files beyond the fixed image-extension check (`.jpg`, `.jpeg`, `.png`, `.webp`):
+
+- `filter.match` — `literal` (exact name), `regex` (RE2), or `glob` (wildcard), mutually exclusive; add `case-sensitive: true` to stop lowercasing before comparison.
+- `filter.age` — `min`/`max` time since the file was last modified (e.g. `24h`, `720h`).
+- `filter.size` — `min`/`max` file size (e.g. `"500KB"`, `"2MiB"`).
+
+All three combine with AND semantics. `gopaper edit` and `gopaper validate` both check that regexes/globs compile and that size/age bounds are ordered.
+
+You can generate a config file using the built-in generator (this creates `gopaper.yaml` at `<executable_dir>/conf/gopaper.yaml`):
 
 ```pwsh
-gopaper baseconfig
+gopaper init -t full   # or -i for interactive prompts
 ```
 
 If you prefer to create the file manually, use the example above as a template.
+
+## Editing the Configuration
+
+`gopaper edit` opens an interactive two-panel TUI editor for your configuration file, with inline hints, presets, and validation on save:
+
+```pwsh
+gopaper edit
+```
+
+See [docs/EDIT.md](docs/EDIT.md) for the full walkthrough (keybindings, presets, themes, and flags).
+
+Run `gopaper show-docs` to browse the same field reference (descriptions, defaults, allowed values) directly in the terminal, without opening the editor:
+
+```pwsh
+gopaper show-docs
+gopaper show-docs --section history
+```
+
+## Validating the Configuration
+
+`gopaper validate` runs the same checks as `gopaper edit` (required fields, allowed values, uniqueness, cross-field rules) without opening the TUI — useful in scripts or CI:
+
+```pwsh
+gopaper validate                      # pretty output, default lookup
+gopaper validate -c ./gopaper.yaml -f json
+gopaper validate --strict             # also verify source directories exist on disk
+```
+
+`--format` accepts `pretty` (default), `plain`, or `json`; `--summary` prints only the error count. The command exits non-zero when validation fails.
 
 ## Usage
 
@@ -72,10 +134,17 @@ Specify a config file explicitly:
 gopaper -c C:\path\to\gopaper.yaml
 ```
 
+Restrict selection to specific categories (comma-separated), regardless of the random pick:
+
+```pwsh
+gopaper --category "Wallhaven,Nature"
+gopaper --category "Wallhaven" --include-disabled   # allow a disabled category too
+```
+
 The tool will:
 - Load configuration and categories
-- Select a random enabled category
-- Read files from the category source directory
+- Select a random category from the eligible set (enabled categories, or the ones named with `--category`)
+- Read files from the category source directory, applying its `filter` if set
 - Pick a random file and set it as the desktop wallpaper
 - Log the selected category, new wallpaper path, previous wallpaper (if available), and the mode used
 
@@ -93,11 +162,7 @@ Choose the mode that best suits your screen and image aspect ratio.
 
 ## Logging & Troubleshooting
 
-- If the CLI cannot find a config file it will return an error. You can specify a config path with `-c`.
-- Error handling behavior: the CLI logs contextual errors and returns wrapped errors to the caller. Check the log file (if configured) for details.
-- Common issues:
-  - Empty or missing categories: ensure at least one category has `enabled: true` and a valid `source` directory.
-  - Permission errors when writing logs or reading image files: run the binary with appropriate permissions.
+The CLI logs contextual errors and returns wrapped errors to the caller — check the log file (if `configuration.logging.output` is `log`, `file`, or `both`) for details. For specific error messages and fixes (missing config, empty categories, filters excluding everything, permission errors, self-update checksum mismatches), see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ## Development
 
@@ -105,6 +170,8 @@ Choose the mode that best suits your screen and image aspect ratio.
   - `internal/cmd` — CLI commands and command wiring
   - `internal/config` — configuration helpers and viper integration
   - `internal/helper` — wallpaper manipulation and utility functions
+  - `internal/filters` — category file-filter compilation and matching
+  - `internal/history` — wallpaper history persistence (prev/next)
   - `internal/models` — data structures and interactive config generation
 
 Run linter/tests locally:
@@ -116,10 +183,16 @@ go test ./...
 
 ## Examples
 
-- Create a base config interactively (will write `gopaper.yaml` to the current folder):
+- Create a config interactively:
 
 ```pwsh
-gopaper baseconfig
+gopaper init -i
+```
+
+- Edit the config in the TUI editor:
+
+```pwsh
+gopaper edit
 ```
 
 - Run using a custom config file:
@@ -130,36 +203,8 @@ gopaper -c C:\Users\lucas\configs\gopaper.yaml
 
 ## Contributing
 
-Contributions are welcome. Please fork the repository, make a branch for your feature or fix, and open a pull request.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup, Makefile targets, and what to run before opening a pull request.
 
 ## License
 
 This project does not include a license file in the repository. If you want to publish it, add an appropriate `LICENSE` file.
-# Gopaper
-
-`gopaper` is a command-line tool (CLI) in Go designed to change the desktop wallpaper. It works as follows:
-
-## Configuration:
-
-The tool depends on a configuration file named gopaper.yaml file that defines the program's behavior, containing log settings and a list of categories. Each category specifies a source directory containing images, the display mode (e.g., crop), and whether it is enabled.
-
-You can use `./gopaper baseconfig` to generate the initial configuration file in the correct format.
-
-<!-- gomarkdoc:embed:start -->
-
-<!-- Code generated by gomarkdoc. DO NOT EDIT -->
-
-# gopaper
-
-```go
-import "gopaper"
-```
-
-## Index
-
-
-
-Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)
-
-
-<!-- gomarkdoc:embed:end -->

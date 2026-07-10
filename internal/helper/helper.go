@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/lucasassuncao/gopaper/internal/filters"
 	"github.com/lucasassuncao/gopaper/internal/models"
 
 	"github.com/reujab/wallpaper"
@@ -66,21 +67,36 @@ func GetRandomCategory(categories []*models.Categories) *models.Categories {
 }
 
 // GetRandomFile returns a random image file from the list of entries.
-// Directories and files with unsupported extensions are excluded.
-func GetRandomFile(files []os.DirEntry) (string, error) {
+// Directories and files with unsupported extensions are excluded. filter may
+// be nil to impose no additional constraint beyond the extension check.
+func GetRandomFile(files []os.DirEntry, filter *filters.Compiled) (string, error) {
 	var imageFiles []os.DirEntry
 	for _, f := range files {
 		if f.IsDir() {
 			continue
 		}
 		ext := strings.ToLower(filepath.Ext(f.Name()))
-		if _, ok := imageExtensions[ext]; ok {
-			imageFiles = append(imageFiles, f)
+		if _, ok := imageExtensions[ext]; !ok {
+			continue
 		}
+		if filter != nil {
+			var info os.FileInfo
+			if filter.NeedsFileInfo() {
+				fi, err := f.Info()
+				if err != nil {
+					continue
+				}
+				info = fi
+			}
+			if !filter.Matches(f.Name(), info) {
+				continue
+			}
+		}
+		imageFiles = append(imageFiles, f)
 	}
 
 	if len(imageFiles) == 0 {
-		return "", fmt.Errorf("no supported image files found in the directory (.jpg, .jpeg, .png, .webp)")
+		return "", fmt.Errorf("no supported image files found in the directory (.jpg, .jpeg, .png, .webp) matching the configured filter")
 	}
 
 	randomIndex := rand.Intn(len(imageFiles)) // #nosec G404 -- non-security random selection

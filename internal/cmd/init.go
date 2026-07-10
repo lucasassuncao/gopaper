@@ -113,7 +113,7 @@ func generateInteractiveConfig() *models.Config {
 		WithDefaultText("Where should logs be output?").
 		WithMaxHeight(10).
 		Show()
-	config.Configuration.Output = output
+	config.Configuration.Logging.Output = output
 
 	if output == "log" || output == "file" || output == "both" {
 		defaultLogPath := getDefaultLogPath()
@@ -121,7 +121,7 @@ func generateInteractiveConfig() *models.Config {
 			WithDefaultText("Log file path").
 			WithDefaultValue(defaultLogPath).
 			Show()
-		config.Configuration.LogFile = logFile
+		config.Configuration.Logging.File = logFile
 	}
 
 	logLevel, _ := pterm.DefaultInteractiveSelect.
@@ -130,13 +130,13 @@ func generateInteractiveConfig() *models.Config {
 		WithDefaultOption("info").
 		WithMaxHeight(10).
 		Show()
-	config.Configuration.LogLevel = logLevel
+	config.Configuration.Logging.Level = logLevel
 
 	showCaller, _ := pterm.DefaultInteractiveConfirm.
 		WithDefaultText("Show caller information in logs?").
 		WithDefaultValue(false).
 		Show()
-	config.Configuration.ShowCaller = showCaller
+	config.Configuration.Logging.ShowCaller = showCaller
 
 	clearScreen()
 	pterm.DefaultSection.Println("Categories Configuration")
@@ -252,9 +252,11 @@ func getTemplateConfig(template string) *models.Config {
 func getBasicTemplate() *models.Config {
 	return &models.Config{
 		Configuration: models.Configuration{
-			Output:     "console",
-			LogLevel:   "info",
-			ShowCaller: false,
+			Logging: models.Logging{
+				Output:     "console",
+				Level:      "info",
+				ShowCaller: false,
+			},
 		},
 		Categories: []models.Categories{
 			{
@@ -271,10 +273,12 @@ func getBasicTemplate() *models.Config {
 func getFullTemplate() *models.Config {
 	return &models.Config{
 		Configuration: models.Configuration{
-			Output:     "both",
-			LogFile:    getDefaultLogPath(),
-			LogLevel:   "info",
-			ShowCaller: false,
+			Logging: models.Logging{
+				Output:     "both",
+				File:       getDefaultLogPath(),
+				Level:      "info",
+				ShowCaller: false,
+			},
 		},
 		Categories: []models.Categories{
 			{

@@ -1,52 +1,62 @@
 {
-  "name": "Movelooper",
+  "name": "Gopaper",
   "build": {
     "dockerfile": "Dockerfile",
     "context": "."
   },
+  "workspaceFolder": "/workspaces/gopaper",
   "shutdownAction": "stopContainer",
+  "remoteUser": "vscode",
+  "postCreateCommand": "bash .devcontainer/postCreate.sh",
+  "postAttachCommand": "bash",
+  "otherPortsAttributes": {
+    "onAutoForward": "ignore"
+  },
+  "capAdd": [
+    "SYS_PTRACE"
+  ],
+  "mounts": [
+    "source=gopaper-go-mod-cache,target=/go/pkg/mod,type=volume",
+    "source=gopaper-go-build-cache,target=/home/vscode/.cache/go-build,type=volume"
+  ],
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {
       "installZsh": "false",
-      "upgradePackages": "false",
+      "upgradePackages": "true",
       "userGid": "automatic",
       "userUid": "automatic",
-      "username": "none"
+      "username": "automatic"
     },
-    "ghcr.io/devcontainers/features/git:1": {
-      "ppa": "true",
-      "version": "latest"
+    "ghcr.io/devcontainers/features/git:1.3.7": {
+      "ppa": "false",
+      "version": "os-provided"
     },
     "ghcr.io/devcontainers/features/go:1": {
       "golangciLintVersion": "latest",
-      "version": "1.23.6"
+      "version": "1.26.3"
     },
-    "ghcr.io/devcontainers/features/powershell:1": {
+    "ghcr.io/devcontainers/features/powershell:2.0.2": {
       "version": "latest"
     },
-    "ghcr.io/eitsupi/devcontainer-features/jq-likes:2.1.0": {
+    "ghcr.io/eitsupi/devcontainer-features/jq-likes:2.1.1": {
       "jqVersion": "latest",
       "yqVersion": "latest"
     }
   },
   "customizations": {
     "vscode": {
-      "extensions": [
-        "golang.go",
-        "eamodio.gitlens",
-        "ms-vscode.PowerShell",
-        "tamasfe.even-better-toml",
-        "zainchen.json",
-        "shd101wyy.markdown-preview-enhanced",
-        "gitlab.gitlab-workflow",
-        "redhat.vscode-yaml",
-        "ms-vscode.makefile-tools"
-      ],
       "settings": {
         "editor.formatOnSave": true,
-        "files.autoSave": "afterDelay",
-        "go.enableCodeLens": {
-          "runtest": true
+        "files.insertFinalNewline": true,
+        "go.delveConfig": {
+          "apiVersion": 2,
+          "dlvLoadConfig": {
+            "followPointers": true,
+            "maxArrayValues": 64,
+            "maxStringLen": 512,
+            "maxStructFields": -1,
+            "maxVariableRecurse": 1
+          }
         },
         "go.inlayHints.assignVariableTypes": true,
         "go.inlayHints.compositeLiteralFields": true,
@@ -55,20 +65,29 @@
         "go.inlayHints.functionTypeParameters": true,
         "go.inlayHints.parameterNames": true,
         "go.inlayHints.rangeVariableTypes": true,
-        "go.lintFlags": [
-          "--fast"
-        ],
         "go.lintOnSave": "file",
         "go.lintTool": "golangci-lint",
+        "go.testFlags": [
+          "-v",
+          "-race"
+        ],
+        "go.toolsManagement.autoUpdate": true,
         "go.toolsManagement.checkForUpdates": "off",
         "go.useLanguageServer": true,
-        "goTestExplorer.profiler.showCodeLens": true,
         "gopls": {
-          "build.buildFlags": [],
           "ui.diagnostic.staticcheck": true
         },
-        "terminal.integrated.defaultProfile.linux": "bash"
-      }
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.tabs.title": "${workspaceFolderName}"
+      },
+      "extensions": [
+        "Anthropic.claude-code",
+        "golang.go",
+        "redhat.vscode-yaml",
+        "EditorConfig.EditorConfig",
+        "github.vscode-github-actions",
+        "kamikillerto.vscode-colorize"
+      ]
     }
   }
 }

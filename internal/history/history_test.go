@@ -4,18 +4,16 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/lucasassuncao/gopaper/internal/models"
 )
 
-func entry(path string) models.HistoryEntry {
-	return models.HistoryEntry{Path: path, Category: "test", Mode: "crop", Timestamp: time.Now()}
+func entry(path string) Entry {
+	return Entry{Path: path, Category: "test", Mode: "crop", Timestamp: time.Now()}
 }
 
 // --- Append ---
 
 func TestAppend_AddsToFront(t *testing.T) {
-	h := &models.History{MaxEntries: 50}
+	h := &History{MaxEntries: 50}
 	Append(h, entry("a.jpg"))
 	Append(h, entry("b.jpg"))
 
@@ -28,7 +26,7 @@ func TestAppend_AddsToFront(t *testing.T) {
 }
 
 func TestAppend_ResetsCurrentIndex(t *testing.T) {
-	h := &models.History{MaxEntries: 50, CurrentIndex: 3}
+	h := &History{MaxEntries: 50, CurrentIndex: 3}
 	Append(h, entry("x.jpg"))
 
 	if h.CurrentIndex != 0 {
@@ -37,7 +35,7 @@ func TestAppend_ResetsCurrentIndex(t *testing.T) {
 }
 
 func TestAppend_TrimsToMaxEntries(t *testing.T) {
-	h := &models.History{MaxEntries: 3}
+	h := &History{MaxEntries: 3}
 	Append(h, entry("a.jpg"))
 	Append(h, entry("b.jpg"))
 	Append(h, entry("c.jpg"))
@@ -54,7 +52,7 @@ func TestAppend_TrimsToMaxEntries(t *testing.T) {
 // --- Prev ---
 
 func TestPrev_EmptyHistory(t *testing.T) {
-	h := &models.History{MaxEntries: 50}
+	h := &History{MaxEntries: 50}
 	_, err := Prev(h)
 	if err != ErrHistoryEmpty {
 		t.Errorf("expected ErrHistoryEmpty, got %v", err)
@@ -62,7 +60,7 @@ func TestPrev_EmptyHistory(t *testing.T) {
 }
 
 func TestPrev_AlreadyAtOldest(t *testing.T) {
-	h := &models.History{MaxEntries: 50}
+	h := &History{MaxEntries: 50}
 	Append(h, entry("a.jpg"))
 
 	_, err := Prev(h)
@@ -72,7 +70,7 @@ func TestPrev_AlreadyAtOldest(t *testing.T) {
 }
 
 func TestPrev_MovesToOlderEntry(t *testing.T) {
-	h := &models.History{MaxEntries: 50}
+	h := &History{MaxEntries: 50}
 	Append(h, entry("a.jpg"))
 	Append(h, entry("b.jpg"))
 	// Entries: [b, a], CurrentIndex=0
@@ -92,7 +90,7 @@ func TestPrev_MovesToOlderEntry(t *testing.T) {
 // --- Next ---
 
 func TestNext_EmptyHistory(t *testing.T) {
-	h := &models.History{MaxEntries: 50}
+	h := &History{MaxEntries: 50}
 	_, err := Next(h)
 	if err != ErrHistoryEmpty {
 		t.Errorf("expected ErrHistoryEmpty, got %v", err)
@@ -100,7 +98,7 @@ func TestNext_EmptyHistory(t *testing.T) {
 }
 
 func TestNext_AlreadyAtNewest(t *testing.T) {
-	h := &models.History{MaxEntries: 50}
+	h := &History{MaxEntries: 50}
 	Append(h, entry("a.jpg"))
 	// CurrentIndex=0, only 1 entry
 
@@ -111,7 +109,7 @@ func TestNext_AlreadyAtNewest(t *testing.T) {
 }
 
 func TestNext_MovesToNewerEntry(t *testing.T) {
-	h := &models.History{MaxEntries: 50}
+	h := &History{MaxEntries: 50}
 	Append(h, entry("a.jpg"))
 	Append(h, entry("b.jpg"))
 	// Entries: [b, a], CurrentIndex=0
@@ -135,7 +133,7 @@ func TestNext_MovesToNewerEntry(t *testing.T) {
 func TestLoadSave_RoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "history.json")
 
-	h := &models.History{MaxEntries: 10}
+	h := &History{MaxEntries: 10}
 	Append(h, entry("wall1.jpg"))
 	Append(h, entry("wall2.jpg"))
 
@@ -143,7 +141,7 @@ func TestLoadSave_RoundTrip(t *testing.T) {
 		t.Fatalf("Save failed: %v", err)
 	}
 
-	loaded, err := Load(path)
+	loaded, err := Load(path, 0)
 	if err != nil {
 		t.Fatalf("Load failed: %v", err)
 	}
@@ -159,7 +157,7 @@ func TestLoadSave_RoundTrip(t *testing.T) {
 func TestLoad_ReturnsEmptyWhenFileNotFound(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nonexistent.json")
 
-	h, err := Load(path)
+	h, err := Load(path, 0)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -168,5 +166,23 @@ func TestLoad_ReturnsEmptyWhenFileNotFound(t *testing.T) {
 	}
 	if h.MaxEntries != defaultMaxEntries {
 		t.Errorf("expected MaxEntries=%d, got %d", defaultMaxEntries, h.MaxEntries)
+	}
+}
+
+func TestLoad_LimitOverridesStoredMaxEntries(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "history.json")
+
+	h := &History{MaxEntries: 50}
+	Append(h, entry("a.jpg"))
+	if err := Save(path, h); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+
+	loaded, err := Load(path, 5)
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if loaded.MaxEntries != 5 {
+		t.Errorf("expected MaxEntries=5, got %d", loaded.MaxEntries)
 	}
 }

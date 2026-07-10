@@ -10,56 +10,138 @@ import "github.com/lucasassuncao/gopaper/internal/models"
 
 ## Index
 
+- [type AgeFilter](<#AgeFilter>)
+  - [func \(AgeFilter\) Metadata\(\) map\[string\]\*metadata.Node](<#AgeFilter.Metadata>)
 - [type Categories](<#Categories>)
+  - [func \(Categories\) Metadata\(\) map\[string\]\*metadata.Node](<#Categories.Metadata>)
 - [type Config](<#Config>)
+  - [func \(Config\) Metadata\(\) map\[string\]\*metadata.Node](<#Config.Metadata>)
 - [type Configuration](<#Configuration>)
+  - [func \(Configuration\) Metadata\(\) map\[string\]\*metadata.Node](<#Configuration.Metadata>)
+- [type Filter](<#Filter>)
+  - [func \(Filter\) Metadata\(\) map\[string\]\*metadata.Node](<#Filter.Metadata>)
 - [type Gopaper](<#Gopaper>)
 - [type History](<#History>)
-- [type HistoryEntry](<#HistoryEntry>)
+  - [func \(History\) Metadata\(\) map\[string\]\*metadata.Node](<#History.Metadata>)
+- [type Logging](<#Logging>)
+  - [func \(Logging\) Metadata\(\) map\[string\]\*metadata.Node](<#Logging.Metadata>)
+- [type MatchFilter](<#MatchFilter>)
+  - [func \(MatchFilter\) Metadata\(\) map\[string\]\*metadata.Node](<#MatchFilter.Metadata>)
+- [type SizeFilter](<#SizeFilter>)
+  - [func \(SizeFilter\) Metadata\(\) map\[string\]\*metadata.Node](<#SizeFilter.Metadata>)
+
+
+<a name="AgeFilter"></a>
+## type [AgeFilter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L169-L172>)
+
+AgeFilter matches a file by how long ago it was last modified.
+
+```go
+type AgeFilter struct {
+    Min time.Duration `yaml:"min,omitempty" mapstructure:"min"`
+    Max time.Duration `yaml:"max,omitempty" mapstructure:"max"`
+}
+```
+
+<a name="AgeFilter.Metadata"></a>
+### func \(AgeFilter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L215>)
+
+```go
+func (AgeFilter) Metadata() map[string]*metadata.Node
+```
+
 
 
 <a name="Categories"></a>
-## type [Categories](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L28-L33>)
+## type [Categories](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L142-L148>)
 
 
 
 ```go
 type Categories struct {
-    Name    string `yaml:"name" mapstructure:"name"`
-    Source  string `yaml:"source" mapstructure:"source"`
-    Mode    string `yaml:"mode" mapstructure:"mode"`
-    Enabled bool   `yaml:"enabled" mapstructure:"enabled"`
+    Name    string  `yaml:"name" mapstructure:"name"`
+    Source  string  `yaml:"source" mapstructure:"source"`
+    Mode    string  `yaml:"mode" mapstructure:"mode"`
+    Enabled bool    `yaml:"enabled" mapstructure:"enabled"`
+    Filter  *Filter `yaml:"filter,omitempty" mapstructure:"filter"`
 }
 ```
 
+<a name="Categories.Metadata"></a>
+### func \(Categories\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L109>)
+
+```go
+func (Categories) Metadata() map[string]*metadata.Node
+```
+
+
+
 <a name="Config"></a>
-## type [Config](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L10-L13>)
+## type [Config](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L13-L16>)
 
 
 
 ```go
 type Config struct {
-    Configuration Configuration `yaml:"configuration"`
-    Categories    []Categories  `yaml:"categories"`
+    Configuration Configuration `yaml:"configuration" mapstructure:"configuration"`
+    Categories    []Categories  `yaml:"categories" mapstructure:"categories"`
 }
 ```
 
+<a name="Config.Metadata"></a>
+### func \(Config\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L41>)
+
+```go
+func (Config) Metadata() map[string]*metadata.Node
+```
+
+
+
 <a name="Configuration"></a>
-## type [Configuration](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L15-L20>)
+## type [Configuration](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L20-L23>)
 
-
+Configuration holds the general settings for gopaper, grouped into logging and history sub\-sections.
 
 ```go
 type Configuration struct {
-    Output     string `yaml:"output"`
-    LogFile    string `yaml:"log-file"`
-    LogLevel   string `yaml:"log-level"`
-    ShowCaller bool   `yaml:"show-caller"`
+    Logging Logging `yaml:"logging" mapstructure:"logging"`
+    History History `yaml:"history" mapstructure:"history"`
 }
 ```
 
+<a name="Configuration.Metadata"></a>
+### func \(Configuration\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L55>)
+
+```go
+func (Configuration) Metadata() map[string]*metadata.Node
+```
+
+
+
+<a name="Filter"></a>
+## type [Filter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L153-L157>)
+
+Filter narrows which files in a category's source directory are eligible for selection, beyond the fixed image\-extension check. Match, Age, and Size combine with AND semantics; a nil sub\-filter imposes no constraint.
+
+```go
+type Filter struct {
+    Match *MatchFilter `yaml:"match,omitempty" mapstructure:"match"`
+    Age   *AgeFilter   `yaml:"age,omitempty" mapstructure:"age"`
+    Size  *SizeFilter  `yaml:"size,omitempty" mapstructure:"size"`
+}
+```
+
+<a name="Filter.Metadata"></a>
+### func \(Filter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L181>)
+
+```go
+func (Filter) Metadata() map[string]*metadata.Node
+```
+
+
+
 <a name="Gopaper"></a>
-## type [Gopaper](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L22-L26>)
+## type [Gopaper](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L136-L140>)
 
 
 
@@ -72,31 +154,93 @@ type Gopaper struct {
 ```
 
 <a name="History"></a>
-## type [History](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L46-L50>)
+## type [History](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L35-L39>)
 
-History is the persistent navigation state for wallpaper history. Entries are stored newest\-first \(index 0 = most recently applied\). CurrentIndex tracks which entry is currently displayed.
+History holds the wallpaper history settings \(used by the prev/next commands\).
 
 ```go
 type History struct {
-    Entries      []HistoryEntry `json:"entries"`
-    CurrentIndex int            `json:"current_index"`
-    MaxEntries   int            `json:"max_entries"`
+    Limit   int    `yaml:"limit,omitempty" mapstructure:"limit"`
+    File    string `yaml:"file,omitempty" mapstructure:"file"`
+    Enabled bool   `yaml:"enabled,omitempty" mapstructure:"enabled"`
 }
 ```
 
-<a name="HistoryEntry"></a>
-## type [HistoryEntry](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L36-L41>)
-
-HistoryEntry represents a single wallpaper that was applied.
+<a name="History.Metadata"></a>
+### func \(History\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L92>)
 
 ```go
-type HistoryEntry struct {
-    Path      string    `json:"path"`
-    Category  string    `json:"category"`
-    Mode      string    `json:"mode"`
-    Timestamp time.Time `json:"timestamp"`
+func (History) Metadata() map[string]*metadata.Node
+```
+
+
+
+<a name="Logging"></a>
+## type [Logging](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L26-L31>)
+
+Logging holds the log output settings.
+
+```go
+type Logging struct {
+    Output     string `yaml:"output" mapstructure:"output"`
+    Level      string `yaml:"level" mapstructure:"level"`
+    File       string `yaml:"file" mapstructure:"file"`
+    ShowCaller bool   `yaml:"show-caller" mapstructure:"show-caller"`
 }
 ```
+
+<a name="Logging.Metadata"></a>
+### func \(Logging\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L67>)
+
+```go
+func (Logging) Metadata() map[string]*metadata.Node
+```
+
+
+
+<a name="MatchFilter"></a>
+## type [MatchFilter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L161-L166>)
+
+MatchFilter matches a file by its name. Literal, Regex, and Glob are mutually exclusive.
+
+```go
+type MatchFilter struct {
+    Literal       string `yaml:"literal,omitempty" mapstructure:"literal"`
+    Regex         string `yaml:"regex,omitempty" mapstructure:"regex"`
+    Glob          string `yaml:"glob,omitempty" mapstructure:"glob"`
+    CaseSensitive bool   `yaml:"case-sensitive,omitempty" mapstructure:"case-sensitive"`
+}
+```
+
+<a name="MatchFilter.Metadata"></a>
+### func \(MatchFilter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L195>)
+
+```go
+func (MatchFilter) Metadata() map[string]*metadata.Node
+```
+
+
+
+<a name="SizeFilter"></a>
+## type [SizeFilter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L176-L179>)
+
+SizeFilter matches a file by its size in bytes. Min/Max accept human\-readable strings such as "10MB" or "1.5GiB".
+
+```go
+type SizeFilter struct {
+    Min string `yaml:"min,omitempty" mapstructure:"min"`
+    Max string `yaml:"max,omitempty" mapstructure:"max"`
+}
+```
+
+<a name="SizeFilter.Metadata"></a>
+### func \(SizeFilter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L228>)
+
+```go
+func (SizeFilter) Metadata() map[string]*metadata.Node
+```
+
+
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)
 

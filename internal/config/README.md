@@ -11,7 +11,12 @@ import "github.com/lucasassuncao/gopaper/internal/config"
 ## Index
 
 - [func ConfigureLogger\(v \*viper.Viper\) \(\*pterm.Logger, error\)](<#ConfigureLogger>)
+- [func ExpandTilde\(path string\) string](<#ExpandTilde>)
+- [func HistoryEnabled\(v \*viper.Viper\) bool](<#HistoryEnabled>)
+- [func HistoryLimit\(v \*viper.Viper\) int](<#HistoryLimit>)
+- [func HistoryPath\(v \*viper.Viper\) \(string, error\)](<#HistoryPath>)
 - [func InitConfig\(v \*viper.Viper, options ...ViperOptions\) error](<#InitConfig>)
+- [func LoadDefault\(v \*viper.Viper\) error](<#LoadDefault>)
 - [func UnmarshalConfig\(m \*models.Gopaper\) \(\[\]\*models.Categories, error\)](<#UnmarshalConfig>)
 - [type ConfigFileNotFoundError](<#ConfigFileNotFoundError>)
   - [func \(e ConfigFileNotFoundError\) Error\(\) string](<#ConfigFileNotFoundError.Error>)
@@ -30,8 +35,44 @@ func ConfigureLogger(v *viper.Viper) (*pterm.Logger, error)
 
 
 
+<a name="ExpandTilde"></a>
+## func [ExpandTilde](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/paths.go#L13>)
+
+```go
+func ExpandTilde(path string) string
+```
+
+ExpandTilde expands a leading "\~" or "\~/" \(and "\~\\" on Windows\) in path to the user's home directory. Any other value — including a bare "\~username" — is returned unchanged, as is path when the home directory cannot be resolved.
+
+<a name="HistoryEnabled"></a>
+## func [HistoryEnabled](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L97>)
+
+```go
+func HistoryEnabled(v *viper.Viper) bool
+```
+
+HistoryEnabled reports whether wallpaper changes should be recorded to history. Defaults to true when configuration.history.enabled is not set.
+
+<a name="HistoryLimit"></a>
+## func [HistoryLimit](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L115>)
+
+```go
+func HistoryLimit(v *viper.Viper) int
+```
+
+HistoryLimit returns the configured maximum number of history entries. A non\-positive value tells history.Load to keep its own default.
+
+<a name="HistoryPath"></a>
+## func [HistoryPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L106>)
+
+```go
+func HistoryPath(v *viper.Viper) (string, error)
+```
+
+HistoryPath returns the configured history file path, falling back to history.DefaultPath\(\) when configuration.history.file is not set.
+
 <a name="InitConfig"></a>
-## func [InitConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L25>)
+## func [InitConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L28>)
 
 ```go
 func InitConfig(v *viper.Viper, options ...ViperOptions) error
@@ -39,8 +80,17 @@ func InitConfig(v *viper.Viper, options ...ViperOptions) error
 
 InitConfig initializes Viper with the provided options and reads the config file.
 
+<a name="LoadDefault"></a>
+## func [LoadDefault](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L81>)
+
+```go
+func LoadDefault(v *viper.Viper) error
+```
+
+LoadDefault loads gopaper.yaml from the standard search locations: next to the executable, then its conf subdirectory. Returns ConfigFileNotFoundError if none exists.
+
 <a name="UnmarshalConfig"></a>
-## func [UnmarshalConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L66>)
+## func [UnmarshalConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L69>)
 
 ```go
 func UnmarshalConfig(m *models.Gopaper) ([]*models.Categories, error)
@@ -49,7 +99,7 @@ func UnmarshalConfig(m *models.Gopaper) ([]*models.Categories, error)
 UnmarshalConfig unmarshals the config file into a struct
 
 <a name="ConfigFileNotFoundError"></a>
-## type [ConfigFileNotFoundError](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L15-L17>)
+## type [ConfigFileNotFoundError](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L18-L20>)
 
 ConfigFileNotFoundError is a custom error for when the config file is not found.
 
@@ -60,7 +110,7 @@ type ConfigFileNotFoundError struct {
 ```
 
 <a name="ConfigFileNotFoundError.Error"></a>
-### func \(ConfigFileNotFoundError\) [Error](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L20>)
+### func \(ConfigFileNotFoundError\) [Error](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L23>)
 
 ```go
 func (e ConfigFileNotFoundError) Error() string
@@ -69,7 +119,7 @@ func (e ConfigFileNotFoundError) Error() string
 Error implements the error interface for ConfigFileNotFoundError
 
 <a name="ViperOptions"></a>
-## type [ViperOptions](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L12>)
+## type [ViperOptions](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L15>)
 
 ViperOptions defines a function type for configuring Viper
 
@@ -78,7 +128,7 @@ type ViperOptions func(*viper.Viper)
 ```
 
 <a name="WithConfigName"></a>
-### func [WithConfigName](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L45>)
+### func [WithConfigName](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L48>)
 
 ```go
 func WithConfigName(name string) ViperOptions
@@ -87,7 +137,7 @@ func WithConfigName(name string) ViperOptions
 WithConfigName sets the name of the config file
 
 <a name="WithConfigPath"></a>
-### func [WithConfigPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L59>)
+### func [WithConfigPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L62>)
 
 ```go
 func WithConfigPath(path string) ViperOptions
@@ -96,7 +146,7 @@ func WithConfigPath(path string) ViperOptions
 WithConfigPath sets the path of the config file
 
 <a name="WithConfigType"></a>
-### func [WithConfigType](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L52>)
+### func [WithConfigType](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L55>)
 
 ```go
 func WithConfigType(configType string) ViperOptions

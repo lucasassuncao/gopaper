@@ -11,7 +11,7 @@ import (
 )
 
 func ConfigureLogger(v *viper.Viper) (*pterm.Logger, error) {
-	switch v.GetString("configuration.output") {
+	switch v.GetString("configuration.logging.output") {
 	default:
 		fallthrough
 	case "console":
@@ -26,8 +26,8 @@ func ConfigureLogger(v *viper.Viper) (*pterm.Logger, error) {
 }
 
 func configurePTermLogger(v *viper.Viper) (*pterm.Logger, error) {
-	l := v.GetString("configuration.log-level")
-	s := v.GetBool("configuration.show-caller")
+	l := v.GetString("configuration.logging.level")
+	s := v.GetBool("configuration.logging.show-caller")
 
 	return pterm.DefaultLogger.WithCaller(s).WithLevel(logLevel(l)).WithWriter(os.Stdout), nil
 }
@@ -38,8 +38,8 @@ func configureFileLogger(v *viper.Viper) (*pterm.Logger, error) {
 		return nil, err
 	}
 
-	l := v.GetString("configuration.log-level")
-	s := v.GetBool("configuration.show-caller")
+	l := v.GetString("configuration.logging.level")
+	s := v.GetBool("configuration.logging.show-caller")
 
 	return pterm.DefaultLogger.WithCaller(s).WithLevel(logLevel(l)).WithWriter(f), nil
 }
@@ -50,8 +50,8 @@ func configureMultiWriterLogger(v *viper.Viper) (*pterm.Logger, error) {
 		return nil, err
 	}
 
-	l := v.GetString("configuration.log-level")
-	s := v.GetBool("configuration.show-caller")
+	l := v.GetString("configuration.logging.level")
+	s := v.GetBool("configuration.logging.show-caller")
 
 	multiWriter := io.MultiWriter(os.Stdout, f)
 
@@ -63,7 +63,7 @@ func configureToDiscardLogs() (*pterm.Logger, error) {
 }
 
 func openLogFile(v *viper.Viper) (*os.File, error) {
-	file := v.GetString("configuration.log-file")
+	file := ExpandTilde(v.GetString("configuration.logging.file"))
 
 	dir := filepath.Dir(file)
 

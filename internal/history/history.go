@@ -6,8 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/lucasassuncao/gopaper/internal/models"
+	"time"
 )
 
 const defaultMaxEntries = 50
@@ -17,6 +16,23 @@ var (
 	ErrAlreadyOldest = errors.New("already at the oldest wallpaper in history")
 	ErrAlreadyNewest = errors.New("already at the most recent wallpaper in history")
 )
+
+// Entry represents a single wallpaper that was applied.
+type Entry struct {
+	Path      string    `json:"path"`
+	Category  string    `json:"category"`
+	Mode      string    `json:"mode"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+// History is the persistent navigation state for wallpaper history.
+// Entries are stored newest-first (index 0 = most recently applied).
+// CurrentIndex tracks which entry is currently displayed.
+type History struct {
+	Entries      []Entry `json:"entries"`
+	CurrentIndex int     `json:"current_index"`
+	MaxEntries   int     `json:"max_entries"`
+}
 
 // DefaultPath returns the path to the history file, located in a "history"
 // subdirectory next to the executable: <exe_dir>/history/gopaper.json
@@ -28,22 +44,30 @@ func DefaultPath() (string, error) {
 	return filepath.Join(filepath.Dir(ex), "history", "gopaper.json"), nil
 }
 
-// Load reads the history file from path. Returns an empty History if the file does not exist.
-func Load(path string) (*models.History, error) {
-	data, err := os.ReadFile(path) // #nosec G304 -- path is derived from os.Executable(), not user input
+// Load reads the history file from path. limit overrides the stored
+// MaxEntries when positive; pass 0 to keep the previously saved value (or
+// the package default for a file that doesn't exist yet).
+func Load(path string, limit int) (*History, error) {
+	data, err := os.ReadFile(path) // #nosec G304 -- path is derived from os.Executable() or configuration.history.file, not user input
 	if os.IsNotExist(err) {
-		return &models.History{MaxEntries: defaultMaxEntries}, nil
+		h := &History{MaxEntries: defaultMaxEntries}
+		if limit > 0 {
+			h.MaxEntries = limit
+		}
+		return h, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("could not read history file: %w", err)
 	}
 
-	var h models.History
+	var h History
 	if err := json.Unmarshal(data, &h); err != nil {
 		return nil, fmt.Errorf("could not parse history file: %w", err)
 	}
 
-	if h.MaxEntries == 0 {
+	if limit > 0 {
+		h.MaxEntries = limit
+	} else if h.MaxEntries == 0 {
 		h.MaxEntries = defaultMaxEntries
 	}
 
@@ -51,7 +75,7 @@ func Load(path string) (*models.History, error) {
 }
 
 // Save writes the history to path, creating parent directories as needed.
-func Save(path string, h *models.History) error {
+func Save(path string, h *History) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
 		return fmt.Errorf("could not create history directory: %w", err)
 	}
@@ -70,8 +94,8 @@ func Save(path string, h *models.History) error {
 
 // Append adds a new entry at the front of the history (newest-first),
 // resets CurrentIndex to 0, and trims the list to MaxEntries.
-func Append(h *models.History, entry models.HistoryEntry) {
-	h.Entries = append([]models.HistoryEntry{entry}, h.Entries...)
+func Append(h *History, entry Entry) {
+	h.Entries = append([]Entry{entry}, h.Entries...)
 	h.CurrentIndex = 0
 
 	if len(h.Entries) > h.MaxEntries {
@@ -80,12 +104,12 @@ func Append(h *models.History, entry models.HistoryEntry) {
 }
 
 // Prev moves CurrentIndex to an older entry and returns it.
-func Prev(h *models.History) (models.HistoryEntry, error) {
+func Prev(h *History) (Entry, error) {
 	if len(h.Entries) == 0 {
-		return models.HistoryEntry{}, ErrHistoryEmpty
+		return Entry{}, ErrHistoryEmpty
 	}
 	if h.CurrentIndex >= len(h.Entries)-1 {
-		return models.HistoryEntry{}, ErrAlreadyOldest
+		return Entry{}, ErrAlreadyOldest
 	}
 
 	h.CurrentIndex++
@@ -93,12 +117,12 @@ func Prev(h *models.History) (models.HistoryEntry, error) {
 }
 
 // Next moves CurrentIndex to a newer entry and returns it.
-func Next(h *models.History) (models.HistoryEntry, error) {
+func Next(h *History) (Entry, error) {
 	if len(h.Entries) == 0 {
-		return models.HistoryEntry{}, ErrHistoryEmpty
+		return Entry{}, ErrHistoryEmpty
 	}
 	if h.CurrentIndex <= 0 {
-		return models.HistoryEntry{}, ErrAlreadyNewest
+		return Entry{}, ErrAlreadyNewest
 	}
 
 	h.CurrentIndex--

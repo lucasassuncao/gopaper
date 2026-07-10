@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/lucasassuncao/gopaper/internal/config"
+	"github.com/lucasassuncao/gopaper/internal/filters"
 	"github.com/lucasassuncao/gopaper/internal/helper"
 	"github.com/lucasassuncao/gopaper/internal/history"
 	"github.com/lucasassuncao/gopaper/internal/models"
@@ -39,21 +39,36 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 			}
 			g.Categories = categories
 
-			enabledCategories := helper.GetEnabledCategories(g.Categories)
+			categoryFlag, _ := cmd.Flags().GetString("category")
+			includeDisabled, _ := cmd.Flags().GetBool("include-disabled")
 
-			selectedCategory := helper.GetRandomCategory(enabledCategories)
+			candidates, err := FilterCategories(g.Categories, ParseCategoryNames(categoryFlag), includeDisabled, g.Logger)
+			if err != nil {
+				g.Logger.Error("invalid category selection", g.Logger.Args("error", err))
+				return err
+			}
+
+			selectedCategory := helper.GetRandomCategory(candidates)
 			if selectedCategory == nil {
 				g.Logger.Error("no enabled or defined category found to select a wallpaper.")
 				return fmt.Errorf("enabled categories not found")
 			}
 
-			files, err := helper.ReadDirectory(selectedCategory.Source)
+			sourcePath := config.ExpandTilde(selectedCategory.Source)
+
+			files, err := helper.ReadDirectory(sourcePath)
 			if err != nil {
-				g.Logger.Error("error reading source directory.", g.Logger.Args("source", selectedCategory.Source, "error", err))
+				g.Logger.Error("error reading source directory.", g.Logger.Args("source", sourcePath, "error", err))
 				return fmt.Errorf("error reading directory: %w", err)
 			}
 
-			selectedFile, err := helper.GetRandomFile(files)
+			filter, err := filters.Compile(selectedCategory.Filter)
+			if err != nil {
+				g.Logger.Error("invalid filter", g.Logger.Args("category", selectedCategory.Name, "error", err))
+				return fmt.Errorf("invalid filter for category %q: %w", selectedCategory.Name, err)
+			}
+
+			selectedFile, err := helper.GetRandomFile(files, filter)
 			if err != nil {
 				g.Logger.Error("Error getting random file", g.Logger.Args("error", err))
 				return fmt.Errorf("error getting random file: %w", err)
@@ -64,7 +79,7 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 				g.Logger.Warn("Could not get previous wallpaper", g.Logger.Args("error", err))
 			}
 
-			err = helper.SetWallpaperFromFile(selectedCategory.Source, selectedFile)
+			err = helper.SetWallpaperFromFile(sourcePath, selectedFile)
 			if err != nil {
 				g.Logger.Error("Error setting the wallpaper", g.Logger.Args("error", err))
 				return fmt.Errorf("error setting the wallpaper: %w", err)
@@ -75,9 +90,9 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 				return fmt.Errorf("error setting wallpaper mode: %w", err)
 			}
 
-			newWallpaper := filepath.Join(selectedCategory.Source, selectedFile)
+			newWallpaper := filepath.Join(sourcePath, selectedFile)
 
-			if err := recordHistory(newWallpaper, selectedCategory); err != nil {
+			if err := recordHistory(g, newWallpaper, selectedCategory); err != nil {
 				g.Logger.Warn("Could not record history", g.Logger.Args("error", err))
 			}
 
@@ -91,10 +106,14 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringP("config", "c", "", "Path to configuration file (e.g., /path/to/gopaper.yaml)")
+	cmd.Flags().String("category", "", "Comma-separated category names to restrict selection to (default: all enabled categories)")
+	cmd.Flags().Bool("include-disabled", false, "Include disabled categories when selecting (works with --category or alone)")
 	cmd.AddCommand(EditCmd())
 	cmd.AddCommand(InitCmd())
 	cmd.AddCommand(PrevCmd())
 	cmd.AddCommand(NextCmd())
+	cmd.AddCommand(ValidateCmd())
+	cmd.AddCommand(ShowCmd())
 	cmd.AddCommand(selfUpdateCmd(version))
 
 	return cmd
@@ -102,34 +121,21 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 
 // preRunHandler handle the pre-run configuration loading
 func preRunHandler(g *models.Gopaper, configPath string) error {
-	var options []config.ViperOptions
-
+	var err error
 	if configPath != "" {
 		dir := filepath.Dir(configPath)
 		filename := filepath.Base(configPath)
 		ext := filepath.Ext(filename)
 		nameWithoutExt := filename[:len(filename)-len(ext)]
 
-		options = []config.ViperOptions{
+		err = config.InitConfig(g.Viper,
 			config.WithConfigName(nameWithoutExt),
 			config.WithConfigType(ext[1:]),
 			config.WithConfigPath(dir),
-		}
+		)
 	} else {
-		ex, err := os.Executable()
-		if err != nil {
-			return fmt.Errorf("error getting executable: %v", err)
-		}
-
-		options = []config.ViperOptions{
-			config.WithConfigName("gopaper"),
-			config.WithConfigType("yaml"),
-			config.WithConfigPath(filepath.Dir(ex)),
-			config.WithConfigPath(filepath.Join(filepath.Dir(ex), "conf")),
-		}
+		err = config.LoadDefault(g.Viper)
 	}
-
-	err := config.InitConfig(g.Viper, options...)
 	if err != nil {
 		if configPath != "" {
 			return fmt.Errorf("configuration file not found at '%s'", configPath)
@@ -147,17 +153,22 @@ func preRunHandler(g *models.Gopaper, configPath string) error {
 	return nil
 }
 
-// recordHistory appends the current wallpaper to the persistent history file.
-func recordHistory(wallpaper string, cat *models.Categories) error {
-	histPath, err := history.DefaultPath()
+// recordHistory appends the current wallpaper to the persistent history file,
+// unless configuration.history.enabled is explicitly set to false.
+func recordHistory(g *models.Gopaper, wallpaper string, cat *models.Categories) error {
+	if !config.HistoryEnabled(g.Viper) {
+		return nil
+	}
+
+	histPath, err := config.HistoryPath(g.Viper)
 	if err != nil {
 		return err
 	}
-	h, err := history.Load(histPath)
+	h, err := history.Load(histPath, config.HistoryLimit(g.Viper))
 	if err != nil {
 		return err
 	}
-	history.Append(h, models.HistoryEntry{
+	history.Append(h, history.Entry{
 		Path:      wallpaper,
 		Category:  cat.Name,
 		Mode:      cat.Mode,

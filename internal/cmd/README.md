@@ -11,11 +11,19 @@ import "github.com/lucasassuncao/gopaper/internal/cmd"
 ## Index
 
 - [Variables](<#variables>)
+- [func CategoriesPreset\(name string\) \[\]models.Categories](<#CategoriesPreset>)
+- [func ConfigurationPreset\(name string\) \*models.Configuration](<#ConfigurationPreset>)
 - [func EditCmd\(\) \*cobra.Command](<#EditCmd>)
+- [func FilterCategories\(all \[\]\*models.Categories, names \[\]string, includeDisabled bool, logger \*pterm.Logger\) \(\[\]\*models.Categories, error\)](<#FilterCategories>)
 - [func InitCmd\(\) \*cobra.Command](<#InitCmd>)
+- [func ListOfCategoriesPresets\(\) \[\]string](<#ListOfCategoriesPresets>)
+- [func ListOfConfigurationPresets\(\) \[\]string](<#ListOfConfigurationPresets>)
 - [func NextCmd\(\) \*cobra.Command](<#NextCmd>)
+- [func ParseCategoryNames\(raw string\) \[\]string](<#ParseCategoryNames>)
 - [func PrevCmd\(\) \*cobra.Command](<#PrevCmd>)
 - [func RootCmd\(g \*models.Gopaper, version string\) \*cobra.Command](<#RootCmd>)
+- [func ShowCmd\(\) \*cobra.Command](<#ShowCmd>)
+- [func ValidateCmd\(\) \*cobra.Command](<#ValidateCmd>)
 
 
 ## Variables
@@ -26,14 +34,168 @@ import "github.com/lucasassuncao/gopaper/internal/cmd"
 var DefaultRepo = ""
 ```
 
+<a name="GopaperBlockPresets"></a>
+
+```go
+var GopaperBlockPresets = presets.Combine(
+    presets.ForField("configuration", configurationPresetsMap()),
+    presets.ForField("categories", categoriesPresetsMap()),
+)
+```
+
+<a name="GopaperDocPresets"></a>GopaperDocPresets is a whole\-document preset source for the root template picker \(ctrl\+p\). Each entry is a full gopaper.yaml ready to use as a starting point.
+
+```go
+var GopaperDocPresets presets.Source = buildDocPresets()
+```
+
+<a name="GopaperValidators"></a>GopaperValidators is the rule set enforced by the edit command at validate/save time.
+
+Per\-field constraints \(required, allowed values, uniqueness\) are declared once in the hint tree \(models.Config.Metadata and friends\) and enforced by the FromMetadata family — hints are the single source of field metadata. Only cross\-field rules, which cannot live in per\-field metadata, are declared here explicitly.
+
+```go
+var GopaperValidators = []editor.Validator{
+
+    editor.RequiredFromMetadata(),
+    editor.OneOfFromMetadata(),
+    editor.CountFromMetadata(),
+    editor.UniqueFromMetadata(),
+
+    editor.NoDuplicates("categories", "name"),
+
+    editor.MutuallyExclusiveNested("categories.filter.match", "literal", "regex", "glob"),
+
+    editor.CrossFieldOrderedNested("categories.filter.age", "min", "max"),
+    editor.CrossFieldOrderedNested("categories.filter.size", "min", "max"),
+
+    editor.ValidatorFunc(func(in editor.ValidationInput) []editor.Violation {
+        var doc struct {
+            Categories []struct {
+                Filter *struct {
+                    Match *struct {
+                        Regex string `yaml:"regex"`
+                        Glob  string `yaml:"glob"`
+                    }   `yaml:"match"`
+                    Size *struct {
+                        Min string `yaml:"min"`
+                        Max string `yaml:"max"`
+                    }   `yaml:"size"`
+                } `yaml:"filter"`
+            } `yaml:"categories"`
+        }
+        if err := yaml.Unmarshal(in.Raw, &doc); err != nil {
+            return nil
+        }
+        var errs []editor.Violation
+        for i, c := range doc.Categories {
+            if c.Filter == nil {
+                continue
+            }
+            if m := c.Filter.Match; m != nil {
+                if m.Regex != "" {
+                    if _, err := regexp.Compile(m.Regex); err != nil {
+                        errs = append(errs, editor.Violation{
+                            Path:    fmt.Sprintf("categories[%d].filter.match.regex", i),
+                            Message: err.Error(),
+                        })
+                    }
+                }
+                if m.Glob != "" {
+                    if _, err := filepath.Match(m.Glob, ""); err != nil {
+                        errs = append(errs, editor.Violation{
+                            Path:    fmt.Sprintf("categories[%d].filter.match.glob", i),
+                            Message: err.Error(),
+                        })
+                    }
+                }
+            }
+            if s := c.Filter.Size; s != nil {
+                if s.Min != "" {
+                    if _, err := filters.ParseSize(s.Min); err != nil {
+                        errs = append(errs, editor.Violation{
+                            Path:    fmt.Sprintf("categories[%d].filter.size.min", i),
+                            Message: err.Error(),
+                        })
+                    }
+                }
+                if s.Max != "" {
+                    if _, err := filters.ParseSize(s.Max); err != nil {
+                        errs = append(errs, editor.Violation{
+                            Path:    fmt.Sprintf("categories[%d].filter.size.max", i),
+                            Message: err.Error(),
+                        })
+                    }
+                }
+            }
+        }
+        return errs
+    }),
+
+    editor.ValidatorFunc(func(in editor.ValidationInput) []editor.Violation {
+        var doc struct {
+            Configuration struct {
+                Logging struct {
+                    Output string `yaml:"output"`
+                    File   string `yaml:"file"`
+                } `yaml:"logging"`
+            } `yaml:"configuration"`
+        }
+        if err := yaml.Unmarshal(in.Raw, &doc); err != nil {
+            return nil
+        }
+        switch doc.Configuration.Logging.Output {
+        case "log", "file", "both":
+        default:
+            return nil
+        }
+        if doc.Configuration.Logging.File != "" {
+            return nil
+        }
+        return []editor.Violation{{
+            Path:    "configuration.logging.file",
+            Message: fmt.Sprintf("required when output is %q", doc.Configuration.Logging.Output),
+        }}
+    }),
+}
+```
+
+<a name="CategoriesPreset"></a>
+## func [CategoriesPreset](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L271>)
+
+```go
+func CategoriesPreset(name string) []models.Categories
+```
+
+
+
+<a name="ConfigurationPreset"></a>
+## func [ConfigurationPreset](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L182>)
+
+```go
+func ConfigurationPreset(name string) *models.Configuration
+```
+
+
+
 <a name="EditCmd"></a>
-## func [EditCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit.go#L15>)
+## func [EditCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit.go#L17>)
 
 ```go
 func EditCmd() *cobra.Command
 ```
 
 EditCmd returns the "edit" command, which opens an interactive TUI editor for the gopaper configuration file.
+
+<a name="FilterCategories"></a>
+## func [FilterCategories](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/category_filter.go#L36>)
+
+```go
+func FilterCategories(all []*models.Categories, names []string, includeDisabled bool, logger *pterm.Logger) ([]*models.Categories, error)
+```
+
+FilterCategories returns the subset of all eligible for random selection.
+
+When names is empty, it behaves like today: enabled categories only, unless includeDisabled is set. When names is non\-empty, each name is looked up in all; an unknown name is an error. A disabled category named explicitly is skipped with a warning unless includeDisabled is set.
 
 <a name="InitCmd"></a>
 ## func [InitCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/init.go#L25>)
@@ -44,6 +206,24 @@ func InitCmd() *cobra.Command
 
 InitCmd generates a configuration file
 
+<a name="ListOfCategoriesPresets"></a>
+## func [ListOfCategoriesPresets](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L275>)
+
+```go
+func ListOfCategoriesPresets() []string
+```
+
+
+
+<a name="ListOfConfigurationPresets"></a>
+## func [ListOfConfigurationPresets](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L186>)
+
+```go
+func ListOfConfigurationPresets() []string
+```
+
+
+
 <a name="NextCmd"></a>
 ## func [NextCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/next.go#L9>)
 
@@ -52,6 +232,15 @@ func NextCmd() *cobra.Command
 ```
 
 NextCmd sets the next \(more recent\) wallpaper from history.
+
+<a name="ParseCategoryNames"></a>
+## func [ParseCategoryNames](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/category_filter.go#L15>)
+
+```go
+func ParseCategoryNames(raw string) []string
+```
+
+ParseCategoryNames splits a comma\-separated category string into a slice of trimmed names. Returns nil when raw is empty or contains only separators.
 
 <a name="PrevCmd"></a>
 ## func [PrevCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/prev.go#L9>)
@@ -70,6 +259,24 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command
 ```
 
 RootCmd represents the base command when called without subcommands
+
+<a name="ShowCmd"></a>
+## func [ShowCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/show_docs.go#L17>)
+
+```go
+func ShowCmd() *cobra.Command
+```
+
+ShowCmd returns the "show\-docs" command, which renders documentation generated from the config schema directly in the terminal.
+
+<a name="ValidateCmd"></a>
+## func [ValidateCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/validate.go#L31>)
+
+```go
+func ValidateCmd() *cobra.Command
+```
+
+ValidateCmd defines the "validate" subcommand.
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)
 

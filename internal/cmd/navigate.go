@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/lucasassuncao/gopaper/internal/config"
 	"github.com/lucasassuncao/gopaper/internal/helper"
 	"github.com/lucasassuncao/gopaper/internal/history"
-	"github.com/lucasassuncao/gopaper/internal/models"
 
 	"github.com/pterm/pterm"
+	"github.com/spf13/viper"
 )
 
 var logger = pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
@@ -16,13 +17,22 @@ var logger = pterm.DefaultLogger.WithLevel(pterm.LogLevelTrace)
 // navigateHistory is the shared implementation for PrevCmd and NextCmd.
 // navigate is called on the loaded history to move the cursor;
 // boundaryErr is the sentinel returned when the cursor is already at the edge.
-func navigateHistory(navigate func(*models.History) (models.HistoryEntry, error), boundaryErr error) error {
-	histPath, err := history.DefaultPath()
+func navigateHistory(navigate func(*history.History) (history.Entry, error), boundaryErr error) error {
+	v := viper.GetViper()
+	if err := config.LoadDefault(v); err != nil {
+		var notFound config.ConfigFileNotFoundError
+		if !errors.As(err, &notFound) {
+			return fmt.Errorf("could not load configuration: %w", err)
+		}
+		// No config file found: fall back to the built-in history defaults.
+	}
+
+	histPath, err := config.HistoryPath(v)
 	if err != nil {
 		return fmt.Errorf("could not determine history path: %w", err)
 	}
 
-	h, err := history.Load(histPath)
+	h, err := history.Load(histPath, config.HistoryLimit(v))
 	if err != nil {
 		return fmt.Errorf("could not load history: %w", err)
 	}

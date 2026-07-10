@@ -1,17 +1,22 @@
-# Use the Ubuntu base image
-FROM ubuntu:latest
+FROM ubuntu:24.04
 
-# Install basic tools
+# Install basic tools and apply security updates
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get -y upgrade && \
+    apt-get install -y --no-install-recommends \
     curl \
     wget \
-    git \
     vim \
     nano \
-    build-essential
-
-SHELL ["/bin/bash", "-c"]
-
-# Set working directory
-WORKDIR /workspace
+    less \
+    build-essential \
+    ca-certificates \
+    strace \
+    lsof \
+    iproute2 \
+    dnsutils \
+    htop \
+    ripgrep \
+    plocate \
+    gnupg && \
+    rm -rf /var/lib/apt/lists/*
