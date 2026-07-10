@@ -22,6 +22,11 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 		Short:   "gopaper is a CLI tool to change wallpapers based on configurable categories.",
 		Long: `gopaper is a CLI tool to change wallpapers based on configurable categories.
 			It allows users to define categories with specific sources and modes, and randomly selects wallpapers from enabled categories.`,
+		// main.go prints the returned error itself; let that be the single
+		// place the user sees it instead of also getting Cobra's own
+		// "Error: ..." plus a full usage dump for every failure.
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			configPath, _ := cmd.Flags().GetString("config")
 			return preRunHandler(g, configPath)
@@ -48,13 +53,33 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 				return err
 			}
 
-			selectedCategory := helper.GetRandomCategory(candidates)
+			conditions, err := config.LoadConditions(g.Viper)
+			if err != nil {
+				g.Logger.Error("invalid conditions configuration", g.Logger.Args("error", err))
+				return err
+			}
+
+			ws := fetchWeatherSnapshot(g)
+
+			now := time.Now()
+			var active []*models.Categories
+			for _, c := range candidates {
+				if _, ok := helper.ResolveSource(c, now, ws, conditions); ok {
+					active = append(active, c)
+					continue
+				}
+				g.Logger.Info("Skipping category: no variant active for the current time",
+					g.Logger.Args("category", c.Name))
+			}
+
+			selectedCategory := helper.GetRandomCategory(active)
 			if selectedCategory == nil {
 				g.Logger.Error("no enabled or defined category found to select a wallpaper.")
 				return fmt.Errorf("enabled categories not found")
 			}
 
-			sourcePath := config.ExpandTilde(selectedCategory.Source)
+			resolvedSource, _ := helper.ResolveSource(selectedCategory, now, ws, conditions)
+			sourcePath := config.ExpandTilde(resolvedSource)
 
 			files, err := helper.ReadDirectory(sourcePath)
 			if err != nil {
@@ -79,7 +104,7 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 				g.Logger.Warn("Could not get previous wallpaper", g.Logger.Args("error", err))
 			}
 
-			err = helper.SetWallpaperFromFile(sourcePath, selectedFile)
+			err = helper.SetWallpaperFromFile(sourcePath, selectedFile, config.TransitionEnabled(g.Viper))
 			if err != nil {
 				g.Logger.Error("Error setting the wallpaper", g.Logger.Args("error", err))
 				return fmt.Errorf("error setting the wallpaper: %w", err)

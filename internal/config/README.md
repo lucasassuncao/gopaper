@@ -16,8 +16,12 @@ import "github.com/lucasassuncao/gopaper/internal/config"
 - [func HistoryLimit\(v \*viper.Viper\) int](<#HistoryLimit>)
 - [func HistoryPath\(v \*viper.Viper\) \(string, error\)](<#HistoryPath>)
 - [func InitConfig\(v \*viper.Viper, options ...ViperOptions\) error](<#InitConfig>)
+- [func LoadConditions\(v \*viper.Viper\) \(map\[string\]models.Condition, error\)](<#LoadConditions>)
 - [func LoadDefault\(v \*viper.Viper\) error](<#LoadDefault>)
+- [func LoadWeatherConfig\(v \*viper.Viper\) \(\*models.WeatherConfig, error\)](<#LoadWeatherConfig>)
+- [func TransitionEnabled\(v \*viper.Viper\) bool](<#TransitionEnabled>)
 - [func UnmarshalConfig\(m \*models.Gopaper\) \(\[\]\*models.Categories, error\)](<#UnmarshalConfig>)
+- [func WeatherCachePath\(\) \(string, error\)](<#WeatherCachePath>)
 - [type ConfigFileNotFoundError](<#ConfigFileNotFoundError>)
   - [func \(e ConfigFileNotFoundError\) Error\(\) string](<#ConfigFileNotFoundError.Error>)
 - [type ViperOptions](<#ViperOptions>)
@@ -45,7 +49,7 @@ func ExpandTilde(path string) string
 ExpandTilde expands a leading "\~" or "\~/" \(and "\~\\" on Windows\) in path to the user's home directory. Any other value — including a bare "\~username" — is returned unchanged, as is path when the home directory cannot be resolved.
 
 <a name="HistoryEnabled"></a>
-## func [HistoryEnabled](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L97>)
+## func [HistoryEnabled](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L104>)
 
 ```go
 func HistoryEnabled(v *viper.Viper) bool
@@ -54,7 +58,7 @@ func HistoryEnabled(v *viper.Viper) bool
 HistoryEnabled reports whether wallpaper changes should be recorded to history. Defaults to true when configuration.history.enabled is not set.
 
 <a name="HistoryLimit"></a>
-## func [HistoryLimit](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L115>)
+## func [HistoryLimit](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L156>)
 
 ```go
 func HistoryLimit(v *viper.Viper) int
@@ -63,7 +67,7 @@ func HistoryLimit(v *viper.Viper) int
 HistoryLimit returns the configured maximum number of history entries. A non\-positive value tells history.Load to keep its own default.
 
 <a name="HistoryPath"></a>
-## func [HistoryPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L106>)
+## func [HistoryPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L113>)
 
 ```go
 func HistoryPath(v *viper.Viper) (string, error)
@@ -80,6 +84,15 @@ func InitConfig(v *viper.Viper, options ...ViperOptions) error
 
 InitConfig initializes Viper with the provided options and reads the config file.
 
+<a name="LoadConditions"></a>
+## func [LoadConditions](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L123>)
+
+```go
+func LoadConditions(v *viper.Viper) (map[string]models.Condition, error)
+```
+
+LoadConditions returns the named conditions declared in configuration.conditions, keyed by name. Returns an empty \(non\-nil\) map when the section is absent.
+
 <a name="LoadDefault"></a>
 ## func [LoadDefault](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L81>)
 
@@ -89,6 +102,24 @@ func LoadDefault(v *viper.Viper) error
 
 LoadDefault loads gopaper.yaml from the standard search locations: next to the executable, then its conf subdirectory. Returns ConfigFileNotFoundError if none exists.
 
+<a name="LoadWeatherConfig"></a>
+## func [LoadWeatherConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L133>)
+
+```go
+func LoadWeatherConfig(v *viper.Viper) (*models.WeatherConfig, error)
+```
+
+LoadWeatherConfig returns the configuration.weather section, or nil when it is not set.
+
+<a name="TransitionEnabled"></a>
+## func [TransitionEnabled](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L98>)
+
+```go
+func TransitionEnabled(v *viper.Viper) bool
+```
+
+TransitionEnabled reports whether wallpaper changes should use the fade transition. Defaults to true; set configuration.transition to "none" to change wallpapers instantly.
+
 <a name="UnmarshalConfig"></a>
 ## func [UnmarshalConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L69>)
 
@@ -97,6 +128,15 @@ func UnmarshalConfig(m *models.Gopaper) ([]*models.Categories, error)
 ```
 
 UnmarshalConfig unmarshals the config file into a struct
+
+<a name="WeatherCachePath"></a>
+## func [WeatherCachePath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L146>)
+
+```go
+func WeatherCachePath() (string, error)
+```
+
+WeatherCachePath returns the path to the cached weather snapshot, in the same directory as the history file.
 
 <a name="ConfigFileNotFoundError"></a>
 ## type [ConfigFileNotFoundError](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L18-L20>)

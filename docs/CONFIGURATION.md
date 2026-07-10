@@ -13,6 +13,7 @@ configuration:
     limit: 50
     file: ""
     enabled: true
+  transition: fade           # fade | none
 
 categories:
   - name: "default"
@@ -53,6 +54,32 @@ Controls the wallpaper history used by `gopaper prev`/`gopaper next`.
 | `file` | string | no | `<executable_dir>/history/gopaper.json` | Custom history file path. |
 | `enabled` | bool | no | `true` | Set `false` to stop recording history entirely (`prev`/`next` then have nothing to navigate). |
 
+## `configuration.transition`
+
+| Value | Effect |
+|---|---|
+| `fade` (default) | Native Windows crossfade between the old and new wallpaper. Falls back to an instant change on non-Windows platforms, or if the fade path fails for any reason. |
+| `none` | Instant change, no transition — the pre-fade behavior. |
+
+## `configuration.weather` and `configuration.conditions`
+
+Optional sections that power **dynamic wallpapers** — categories that switch source
+directory by time of day, calendar date, or live weather. See
+[DYNAMIC-WALLPAPERS.md](DYNAMIC-WALLPAPERS.md) for the full guide with examples; summary:
+
+```yaml
+configuration:
+  weather:                              # only needed if a condition uses weather fields
+    provider: open-meteo
+    latitude: -23.55
+    longitude: -46.63
+    cache-ttl: 15m
+  conditions:
+    day:    { hours: "06:00-17:59" }
+    summer: { date-range: { start: "12-21", end: "03-20" } }
+    rainy:  { weather: [rain, drizzle], priority: 10 }
+```
+
 ## `categories[]`
 
 Each entry is one wallpaper source.
@@ -60,10 +87,14 @@ Each entry is one wallpaper source.
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `name` | string | yes, unique | Display name; must not repeat across categories. |
-| `source` | string | yes | Directory scanned for images (`.jpg`, `.jpeg`, `.png`, `.webp`). Not recursive. |
+| `source` | string | yes, unless `variants` is set | Directory scanned for images (`.jpg`, `.jpeg`, `.png`, `.webp`), not recursive. With `variants`, doubles as the base directory for any relative variant `source`. |
+| `variants` | list | no | Time/date/weather-conditioned renditions of this category — see [DYNAMIC-WALLPAPERS.md](DYNAMIC-WALLPAPERS.md). |
 | `mode` | string | yes | One of `crop`, `tile`, `stretch`, `span`, `fit`, `center`. |
 | `enabled` | bool | no (default `true`) | Disabled categories are skipped unless selected explicitly with `--category --include-disabled`. |
 | `filter` | object | no | Narrows which files in `source` are eligible — see [FILTERS.md](FILTERS.md). |
+
+A category with `variants` but no `variant` currently active (e.g. outside every `hours`
+window) is skipped for that run, same as a disabled category — logged, not an error.
 
 ## Wallpaper modes
 

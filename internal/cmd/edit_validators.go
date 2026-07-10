@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 
 	"github.com/lucasassuncao/gopaper/internal/filters"
+	"github.com/lucasassuncao/gopaper/internal/schedule"
+	"github.com/lucasassuncao/gopaper/internal/weather"
 	"github.com/lucasassuncao/yedit/editor"
 )
 
@@ -98,6 +103,222 @@ var GopaperValidators = []editor.Validator{
 						})
 					}
 				}
+			}
+		}
+		return errs
+	}),
+
+	// Category source/variants shape, and per-variant hours/condition rules.
+	// A category either has a plain source (no variants) or variants
+	// (source optional there, but required as the base directory for any
+	// variant with a relative source). Each variant defines exactly one of
+	// hours/condition; a condition name must exist in
+	// configuration.conditions.
+	editor.ValidatorFunc(func(in editor.ValidationInput) []editor.Violation {
+		var doc struct {
+			Configuration struct {
+				Conditions map[string]struct {
+					Hours        string   `yaml:"hours"`
+					Weather      []string `yaml:"weather"`
+					WindSpeedMin *float64 `yaml:"wind-speed-min"`
+					WindSpeedMax *float64 `yaml:"wind-speed-max"`
+				} `yaml:"conditions"`
+			} `yaml:"configuration"`
+			Categories []struct {
+				Source   string `yaml:"source"`
+				Variants []struct {
+					Source    string `yaml:"source"`
+					Hours     string `yaml:"hours"`
+					Condition string `yaml:"condition"`
+				} `yaml:"variants"`
+			} `yaml:"categories"`
+		}
+		if err := yaml.Unmarshal(in.Raw, &doc); err != nil {
+			return nil
+		}
+		var errs []editor.Violation
+		for i, c := range doc.Categories {
+			if len(c.Variants) == 0 {
+				if c.Source == "" {
+					errs = append(errs, editor.Violation{
+						Path:    fmt.Sprintf("categories[%d].source", i),
+						Message: "define either source or variants",
+					})
+				}
+				continue
+			}
+			for j, v := range c.Variants {
+				if v.Source == "" {
+					errs = append(errs, editor.Violation{
+						Path:    fmt.Sprintf("categories[%d].variants[%d].source", i, j),
+						Message: "required",
+					})
+				} else if !filepath.IsAbs(v.Source) && c.Source == "" {
+					errs = append(errs, editor.Violation{
+						Path:    fmt.Sprintf("categories[%d].variants[%d].source", i, j),
+						Message: "relative source requires the category to define source (used as the base directory)",
+					})
+				}
+
+				switch {
+				case v.Hours != "" && v.Condition != "":
+					errs = append(errs, editor.Violation{
+						Path:    fmt.Sprintf("categories[%d].variants[%d].hours", i, j),
+						Message: "hours and condition are mutually exclusive - define one or the other",
+					})
+				case v.Hours == "" && v.Condition == "":
+					errs = append(errs, editor.Violation{
+						Path:    fmt.Sprintf("categories[%d].variants[%d].hours", i, j),
+						Message: `required - either "hours" (daily HH:MM-HH:MM window) or "condition" (name from configuration.conditions)`,
+					})
+				case v.Hours != "":
+					if _, err := schedule.ParseWindow(v.Hours); err != nil {
+						errs = append(errs, editor.Violation{
+							Path:    fmt.Sprintf("categories[%d].variants[%d].hours", i, j),
+							Message: err.Error(),
+						})
+					}
+				case v.Condition != "":
+					if _, ok := doc.Configuration.Conditions[v.Condition]; !ok {
+						errs = append(errs, editor.Violation{
+							Path:    fmt.Sprintf("categories[%d].variants[%d].condition", i, j),
+							Message: fmt.Sprintf("unknown condition %q - not defined in configuration.conditions", v.Condition),
+						})
+					}
+				}
+			}
+		}
+		return errs
+	}),
+
+	// configuration.conditions shape: exactly one of hours / date-range /
+	// weather-bucket (weather, wind-speed-*, temperature-*, which combine
+	// with AND) per condition, known sky names, valid date-range, and
+	// configuration.weather requiredness/validity.
+	editor.ValidatorFunc(func(in editor.ValidationInput) []editor.Violation {
+		var doc struct {
+			Configuration struct {
+				Weather *struct {
+					Provider  string   `yaml:"provider"`
+					Latitude  *float64 `yaml:"latitude"`
+					Longitude *float64 `yaml:"longitude"`
+					CacheTTL  string   `yaml:"cache-ttl"`
+				} `yaml:"weather"`
+				Conditions map[string]struct {
+					Hours     string `yaml:"hours"`
+					DateRange *struct {
+						Start string `yaml:"start"`
+						End   string `yaml:"end"`
+					} `yaml:"date-range"`
+					Weather        []string `yaml:"weather"`
+					WindSpeedMin   *float64 `yaml:"wind-speed-min"`
+					WindSpeedMax   *float64 `yaml:"wind-speed-max"`
+					TemperatureMin *float64 `yaml:"temperature-min"`
+					TemperatureMax *float64 `yaml:"temperature-max"`
+				} `yaml:"conditions"`
+			} `yaml:"configuration"`
+		}
+		if err := yaml.Unmarshal(in.Raw, &doc); err != nil {
+			return nil
+		}
+
+		conditionNames := make([]string, 0, len(doc.Configuration.Conditions))
+		for name := range doc.Configuration.Conditions {
+			conditionNames = append(conditionNames, name)
+		}
+		sort.Strings(conditionNames)
+
+		var errs []editor.Violation
+		needsWeatherConfig := false
+		for _, name := range conditionNames {
+			cond := doc.Configuration.Conditions[name]
+			hasHours := cond.Hours != ""
+			hasDateRange := cond.DateRange != nil
+			hasWeatherFields := len(cond.Weather) > 0 || cond.WindSpeedMin != nil || cond.WindSpeedMax != nil ||
+				cond.TemperatureMin != nil || cond.TemperatureMax != nil
+
+			groupCount := 0
+			if hasHours {
+				groupCount++
+			}
+			if hasDateRange {
+				groupCount++
+			}
+			if hasWeatherFields {
+				groupCount++
+			}
+
+			switch {
+			case groupCount > 1:
+				errs = append(errs, editor.Violation{
+					Path:    fmt.Sprintf("configuration.conditions.%s", name),
+					Message: "hours, date-range, and weather/wind-speed-*/temperature-* are mutually exclusive - define exactly one",
+				})
+			case groupCount == 0:
+				errs = append(errs, editor.Violation{
+					Path:    fmt.Sprintf("configuration.conditions.%s", name),
+					Message: "define hours, date-range, or weather/wind-speed-*/temperature-*",
+				})
+			case hasDateRange:
+				if cond.DateRange.Start == "" || cond.DateRange.End == "" {
+					errs = append(errs, editor.Violation{
+						Path:    fmt.Sprintf("configuration.conditions.%s.date-range", name),
+						Message: `both start and end are required, in "MM-DD" format`,
+					})
+				} else if _, err := schedule.ParseDateRange(cond.DateRange.Start, cond.DateRange.End); err != nil {
+					errs = append(errs, editor.Violation{
+						Path:    fmt.Sprintf("configuration.conditions.%s.date-range", name),
+						Message: err.Error(),
+					})
+				}
+			case hasWeatherFields:
+				needsWeatherConfig = true
+				for _, sky := range cond.Weather {
+					if !weather.IsValidSky(sky) {
+						errs = append(errs, editor.Violation{
+							Path:    fmt.Sprintf("configuration.conditions.%s.weather", name),
+							Message: fmt.Sprintf("unknown weather category %q - use one of: %s", sky, strings.Join(weather.SkyNames(), ", ")),
+						})
+					}
+				}
+			}
+		}
+
+		if !needsWeatherConfig {
+			return errs
+		}
+
+		w := doc.Configuration.Weather
+		if w == nil {
+			return append(errs, editor.Violation{
+				Path:    "configuration.weather",
+				Message: "required because a condition uses weather/wind-speed-min/wind-speed-max/temperature-min/temperature-max",
+			})
+		}
+		if w.Provider != "open-meteo" {
+			errs = append(errs, editor.Violation{
+				Path:    "configuration.weather.provider",
+				Message: `only "open-meteo" is supported`,
+			})
+		}
+		if w.Latitude == nil || *w.Latitude < -90 || *w.Latitude > 90 {
+			errs = append(errs, editor.Violation{
+				Path:    "configuration.weather.latitude",
+				Message: "required, must be between -90 and 90",
+			})
+		}
+		if w.Longitude == nil || *w.Longitude < -180 || *w.Longitude > 180 {
+			errs = append(errs, editor.Violation{
+				Path:    "configuration.weather.longitude",
+				Message: "required, must be between -180 and 180",
+			})
+		}
+		if w.CacheTTL != "" {
+			if _, err := time.ParseDuration(w.CacheTTL); err != nil {
+				errs = append(errs, editor.Violation{
+					Path:    "configuration.weather.cache-ttl",
+					Message: err.Error(),
+				})
 			}
 		}
 		return errs

@@ -46,7 +46,7 @@ func navigateHistory(navigate func(*history.History) (history.Entry, error), bou
 		return err
 	}
 
-	if err := helper.SetWallpaperFromPath(entry.Path); err != nil {
+	if err := helper.SetWallpaperFromPath(entry.Path, config.TransitionEnabled(v)); err != nil {
 		return fmt.Errorf("could not set wallpaper: %w", err)
 	}
 

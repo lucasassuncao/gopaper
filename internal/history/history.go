@@ -76,7 +76,7 @@ func Load(path string, limit int) (*History, error) {
 
 // Save writes the history to path, creating parent directories as needed.
 func Save(path string, h *History) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return fmt.Errorf("could not create history directory: %w", err)
 	}
 
@@ -85,7 +85,7 @@ func Save(path string, h *History) error {
 		return fmt.Errorf("could not serialize history: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0600); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("could not write history file: %w", err)
 	}
 

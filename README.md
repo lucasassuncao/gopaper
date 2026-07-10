@@ -5,6 +5,8 @@ Gopaper is a small, cross-platform command-line tool written in Go that selects 
 **Features**
 - Randomly selects a wallpaper from enabled categories
 - Supports multiple wallpaper display modes (crop, tile, stretch, span, fit, center)
+- Smooth native crossfade transition on Windows (`configuration.transition: fade`)
+- Dynamic wallpapers: categories that switch source by time of day, calendar date, or live weather (via [Open-Meteo](https://open-meteo.com/))
 - Configurable logging and output
 - Generates a template `gopaper.yaml` configuration file
 
@@ -14,6 +16,7 @@ Gopaper is a small, cross-platform command-line tool written in Go that selects 
 
 - [Getting Started](docs/GETTING-STARTED.md) — install, first config, first run
 - [Configuration Reference](docs/CONFIGURATION.md) — full `gopaper.yaml` schema
+- [Dynamic Wallpapers](docs/DYNAMIC-WALLPAPERS.md) — variants, time/date/weather conditions
 - [Filters](docs/FILTERS.md) — narrowing which files a category picks from
 - [Commands](docs/COMMANDS.md) — every command and flag
 - [Interactive Config Editor](docs/EDIT.md) — `gopaper edit` walkthrough
@@ -90,6 +93,38 @@ gopaper init -t full   # or -i for interactive prompts
 ```
 
 If you prefer to create the file manually, use the example above as a template.
+
+### Dynamic wallpapers (time, date, and weather)
+
+A category isn't limited to one fixed `source` — it can switch between multiple
+directories automatically, based on the time of day, the calendar date, or live weather:
+
+```yaml
+configuration:
+  transition: fade
+  weather:
+    provider: open-meteo
+    latitude: -23.55
+    longitude: -46.63
+  conditions:
+    day:   { hours: "06:00-17:59" }
+    night: { hours: "18:00-05:59" }
+    rainy: { weather: [rain, drizzle], priority: 10 }
+
+categories:
+  - name: "Saltern Study"
+    source: "C:\\Walls\\DynamicWallpapers\\Saltern Study"
+    mode: crop
+    enabled: true
+    variants:
+      - { source: "./day", condition: day }
+      - { source: "./night", condition: night }
+```
+
+See [docs/DYNAMIC-WALLPAPERS.md](docs/DYNAMIC-WALLPAPERS.md) for the full guide: relative
+variant paths, named conditions, calendar date ranges (including ones that span New
+Year's Eve), weather thresholds (sky, wind, temperature), and how priority resolves ties
+when more than one variant is active at once.
 
 ## Editing the Configuration
 

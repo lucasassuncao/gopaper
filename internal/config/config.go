@@ -92,6 +92,13 @@ func LoadDefault(v *viper.Viper) error {
 	)
 }
 
+// TransitionEnabled reports whether wallpaper changes should use the fade
+// transition. Defaults to true; set configuration.transition to "none" to
+// change wallpapers instantly.
+func TransitionEnabled(v *viper.Viper) bool {
+	return v.GetString("configuration.transition") != "none"
+}
+
 // HistoryEnabled reports whether wallpaper changes should be recorded to
 // history. Defaults to true when configuration.history.enabled is not set.
 func HistoryEnabled(v *viper.Viper) bool {
@@ -108,6 +115,40 @@ func HistoryPath(v *viper.Viper) (string, error) {
 		return ExpandTilde(file), nil
 	}
 	return history.DefaultPath()
+}
+
+// LoadConditions returns the named conditions declared in
+// configuration.conditions, keyed by name. Returns an empty (non-nil) map
+// when the section is absent.
+func LoadConditions(v *viper.Viper) (map[string]models.Condition, error) {
+	conditions := map[string]models.Condition{}
+	if err := v.UnmarshalKey("configuration.conditions", &conditions); err != nil {
+		return nil, fmt.Errorf("unable to decode configuration.conditions: %w", err)
+	}
+	return conditions, nil
+}
+
+// LoadWeatherConfig returns the configuration.weather section, or nil when
+// it is not set.
+func LoadWeatherConfig(v *viper.Viper) (*models.WeatherConfig, error) {
+	if !v.IsSet("configuration.weather") {
+		return nil, nil
+	}
+	var wc models.WeatherConfig
+	if err := v.UnmarshalKey("configuration.weather", &wc); err != nil {
+		return nil, fmt.Errorf("unable to decode configuration.weather: %w", err)
+	}
+	return &wc, nil
+}
+
+// WeatherCachePath returns the path to the cached weather snapshot, in the
+// same directory as the history file.
+func WeatherCachePath() (string, error) {
+	histPath, err := history.DefaultPath()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(histPath), "weather-cache.json"), nil
 }
 
 // HistoryLimit returns the configured maximum number of history entries.

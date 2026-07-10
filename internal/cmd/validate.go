@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -121,12 +122,16 @@ func runValidate(configPath string, format validateFormat, summaryOnly, strict b
 	return nil
 }
 
-// strictDirViolations checks whether each category's source directory exists
-// on disk, returning a violation for each one that doesn't.
+// strictDirViolations checks whether each category's source directory (and
+// each variant's) exists on disk, returning a violation for each one that
+// doesn't.
 func strictDirViolations(raw []byte) []editor.Violation {
 	var doc struct {
 		Categories []struct {
-			Source string `yaml:"source"`
+			Source   string `yaml:"source"`
+			Variants []struct {
+				Source string `yaml:"source"`
+			} `yaml:"variants"`
 		} `yaml:"categories"`
 	}
 	if err := yaml.Unmarshal(raw, &doc); err != nil {
@@ -135,14 +140,33 @@ func strictDirViolations(raw []byte) []editor.Violation {
 
 	var out []editor.Violation
 	for i, c := range doc.Categories {
-		if c.Source == "" {
-			continue
+		if c.Source != "" {
+			if _, err := os.Stat(config.ExpandTilde(c.Source)); os.IsNotExist(err) {
+				out = append(out, editor.Violation{
+					Path:    fmt.Sprintf("categories[%d].source", i),
+					Message: fmt.Sprintf("directory does not exist: %s", c.Source),
+				})
+			}
 		}
-		if _, err := os.Stat(config.ExpandTilde(c.Source)); os.IsNotExist(err) {
-			out = append(out, editor.Violation{
-				Path:    fmt.Sprintf("categories[%d].source", i),
-				Message: fmt.Sprintf("directory does not exist: %s", c.Source),
-			})
+		for j, v := range c.Variants {
+			if v.Source == "" {
+				continue
+			}
+			varPath := v.Source
+			switch {
+			case filepath.IsAbs(varPath):
+				varPath = config.ExpandTilde(varPath)
+			case c.Source != "":
+				varPath = filepath.Join(config.ExpandTilde(c.Source), varPath)
+			default:
+				continue // no base to resolve against; the shape validator already flags this
+			}
+			if _, err := os.Stat(varPath); os.IsNotExist(err) {
+				out = append(out, editor.Violation{
+					Path:    fmt.Sprintf("categories[%d].variants[%d].source", i, j),
+					Message: fmt.Sprintf("directory does not exist: %s", varPath),
+				})
+			}
 		}
 	}
 	return out

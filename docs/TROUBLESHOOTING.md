@@ -48,6 +48,45 @@ then check the filter against what's actually in the directory — see [FILTERS.
 
 A leading `~` or `~/` (also `~\` on Windows) in `configuration.logging.file`, `configuration.history.file`, or a category's `source` expands to the user's home directory automatically. Anything else — a bare `~username`, or `~` in the middle of a path — is left untouched. If a path still looks unexpanded, check for a typo in the prefix (it must be exactly `~` or start with `~/`/`~\`).
 
+## A category with `variants` never gets picked ("no variant active for the current time")
+
+None of that category's variants currently match — e.g. every `hours`/`date-range` window
+excludes right now, or a weather-bucket condition's thresholds aren't met (or weather data
+isn't available at all). This is logged at info level and is not an error by itself; it
+only becomes the `"enabled categories not found"` error if it empties the entire candidate
+pool. Run `gopaper validate` to confirm the condition definitions themselves are correct,
+and see [DYNAMIC-WALLPAPERS.md](DYNAMIC-WALLPAPERS.md) for how conditions and priority are
+resolved.
+
+## "hours and condition are mutually exclusive" / "hours, date-range, and weather/... are mutually exclusive"
+
+A variant (or a named condition) set more than one of the mutually-exclusive groups
+described in [DYNAMIC-WALLPAPERS.md](DYNAMIC-WALLPAPERS.md#named-conditions) — pick exactly
+one: `hours`, `date-range`, or the weather bucket (`weather`/`wind-speed-*`/`temperature-*`,
+which combine with each other via AND, just not with the other two groups).
+
+## "relative source requires the category to define source"
+
+A variant's `source` is relative (e.g. `"./day"`) but its category has no `source` of its
+own to resolve it against. Either add a `source` to the category (used as the base
+directory) or make the variant's `source` absolute.
+
+## "configuration.weather required because a condition uses weather/..."
+
+Some entry in `configuration.conditions` uses `weather`, `wind-speed-min`/`max`, or
+`temperature-min`/`max`, but `configuration.weather` (`provider`, `latitude`, `longitude`)
+isn't set. Add it — see [DYNAMIC-WALLPAPERS.md](DYNAMIC-WALLPAPERS.md#weather-based-conditions).
+
+## Weather-based variants never seem to activate
+
+Check, in order: `configuration.weather.latitude`/`longitude` are correct for your actual
+location; the condition's thresholds are realistic for current conditions (a
+`temperature-min: 30` condition won't hold in winter); and whether the weather fetch is
+failing outright — a failed fetch with no usable cache makes every weather-bucket
+condition evaluate to "not holding" rather than erroring, so it can look identical to
+"the weather just doesn't match" from the outside. There's no dedicated status command
+yet to distinguish the two; check `configuration.logging` output for a fetch warning.
+
 ## `prev`/`next` say history is empty
 
 Either no wallpaper has been set yet with the current history file, or `configuration.history.enabled: false` is set (which disables recording entirely — there's nothing to navigate). Check `configuration.history.file` if you've customized it; `prev`/`next` and the main run must agree on the same file to see the same history.

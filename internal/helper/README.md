@@ -16,13 +16,14 @@ import "github.com/lucasassuncao/gopaper/internal/helper"
 - [func GetRandomCategory\(categories \[\]\*models.Categories\) \*models.Categories](<#GetRandomCategory>)
 - [func GetRandomFile\(files \[\]os.DirEntry, filter \*filters.Compiled\) \(string, error\)](<#GetRandomFile>)
 - [func ReadDirectory\(path string\) \(\[\]os.DirEntry, error\)](<#ReadDirectory>)
-- [func SetWallpaperFromFile\(source, file string\) error](<#SetWallpaperFromFile>)
-- [func SetWallpaperFromPath\(fullPath string\) error](<#SetWallpaperFromPath>)
+- [func ResolveSource\(cat \*models.Categories, now time.Time, ws \*weather.Snapshot, conditions map\[string\]models.Condition\) \(string, bool\)](<#ResolveSource>)
+- [func SetWallpaperFromFile\(source, file string, fade bool\) error](<#SetWallpaperFromFile>)
+- [func SetWallpaperFromPath\(fullPath string, fade bool\) error](<#SetWallpaperFromPath>)
 - [func SetWallpaperMode\(mode string\) error](<#SetWallpaperMode>)
 
 
 <a name="CreateDirectory"></a>
-## func [CreateDirectory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L25>)
+## func [CreateDirectory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L28>)
 
 ```go
 func CreateDirectory(dir string) error
@@ -31,7 +32,7 @@ func CreateDirectory(dir string) error
 CreateDirectory checks if the specified directory exists, and if not, creates it with full permissions.
 
 <a name="GetEnabledCategories"></a>
-## func [GetEnabledCategories](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L48>)
+## func [GetEnabledCategories](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L51>)
 
 ```go
 func GetEnabledCategories(categories []*models.Categories) []*models.Categories
@@ -40,7 +41,7 @@ func GetEnabledCategories(categories []*models.Categories) []*models.Categories
 GetEnabledCategories returns a list of enabled categories from the list of categories.
 
 <a name="GetPreviousWallpaper"></a>
-## func [GetPreviousWallpaper](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L120>)
+## func [GetPreviousWallpaper](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L257>)
 
 ```go
 func GetPreviousWallpaper() (string, error)
@@ -49,7 +50,7 @@ func GetPreviousWallpaper() (string, error)
 GetPreviousWallpaper returns the path of the previous wallpaper.
 
 <a name="GetRandomCategory"></a>
-## func [GetRandomCategory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L59>)
+## func [GetRandomCategory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L62>)
 
 ```go
 func GetRandomCategory(categories []*models.Categories) *models.Categories
@@ -58,7 +59,7 @@ func GetRandomCategory(categories []*models.Categories) *models.Categories
 GetRandomCategory returns a random category from the list of categories.
 
 <a name="GetRandomFile"></a>
-## func [GetRandomFile](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L72>)
+## func [GetRandomFile](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L75>)
 
 ```go
 func GetRandomFile(files []os.DirEntry, filter *filters.Compiled) (string, error)
@@ -67,7 +68,7 @@ func GetRandomFile(files []os.DirEntry, filter *filters.Compiled) (string, error
 GetRandomFile returns a random image file from the list of entries. Directories and files with unsupported extensions are excluded. filter may be nil to impose no additional constraint beyond the extension check.
 
 <a name="ReadDirectory"></a>
-## func [ReadDirectory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L38>)
+## func [ReadDirectory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L41>)
 
 ```go
 func ReadDirectory(path string) ([]os.DirEntry, error)
@@ -75,32 +76,43 @@ func ReadDirectory(path string) ([]os.DirEntry, error)
 
 ReadDirectory reads the contents of a given directory and returns the files.
 
-<a name="SetWallpaperFromFile"></a>
-## func [SetWallpaperFromFile](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L107>)
+<a name="ResolveSource"></a>
+## func [ResolveSource](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L120>)
 
 ```go
-func SetWallpaperFromFile(source, file string) error
+func ResolveSource(cat *models.Categories, now time.Time, ws *weather.Snapshot, conditions map[string]models.Condition) (string, bool)
+```
+
+ResolveSource returns the source directory a category should use at time now, given the current weather snapshot ws \(nil when weather is unavailable or not configured\) and the named conditions declared in configuration.conditions. Plain categories return their source directly.
+
+For a category with variants, every variant whose condition currently holds is a candidate; the candidate with the highest priority wins \(ties broken by position in the variants list\). A variant's priority comes from its named condition's priority \(0 if unset\); a variant using inline hours has priority 0. ok is false when no variant's condition holds, meaning the category is ineligible for this run.
+
+<a name="SetWallpaperFromFile"></a>
+## func [SetWallpaperFromFile](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L237>)
+
+```go
+func SetWallpaperFromFile(source, file string, fade bool) error
 ```
 
 SetWallpaperFromFile sets the wallpaper from the specified file.
 
 <a name="SetWallpaperFromPath"></a>
-## func [SetWallpaperFromPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L112>)
+## func [SetWallpaperFromPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L244>)
 
 ```go
-func SetWallpaperFromPath(fullPath string) error
+func SetWallpaperFromPath(fullPath string, fade bool) error
 ```
 
-SetWallpaperFromPath sets the wallpaper from a pre\-built absolute path.
+SetWallpaperFromPath sets the wallpaper from a pre\-built absolute path. When fade is true it tries the native Windows crossfade transition first, falling back to the instant swap if the fade path fails for any reason.
 
 <a name="SetWallpaperMode"></a>
-## func [SetWallpaperMode](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L125>)
+## func [SetWallpaperMode](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L266>)
 
 ```go
 func SetWallpaperMode(mode string) error
 ```
 
-SetWallpaperMode sets the wallpaper mode based on the user's preference.
+SetWallpaperMode sets the wallpaper mode based on the user's preference. On Windows this applies the mode via IDesktopWallpaper directly, which avoids the legacy registry write \+ reapply that would otherwise stomp on SetWallpaperFromPath's fade transition; other platforms fall back to the standard behavior.
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)
 
