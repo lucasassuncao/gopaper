@@ -10,6 +10,7 @@ import (
 	"github.com/lucasassuncao/gopaper/internal/helper"
 	"github.com/lucasassuncao/gopaper/internal/history"
 	"github.com/lucasassuncao/gopaper/internal/models"
+	"github.com/lucasassuncao/gopaper/internal/wallhaven"
 
 	"github.com/spf13/cobra"
 )
@@ -60,11 +61,12 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 			}
 
 			ws := fetchWeatherSnapshot(g)
+			wallhavenDirs := refreshWallhavenCaches(g, candidates)
 
 			now := time.Now()
 			var active []*models.Categories
 			for _, c := range candidates {
-				if _, ok := helper.ResolveSource(c, now, ws, conditions); ok {
+				if _, ok := helper.ResolveSource(c, now, ws, conditions, wallhavenDirs[c]); ok {
 					active = append(active, c)
 					continue
 				}
@@ -78,7 +80,19 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 				return fmt.Errorf("enabled categories not found")
 			}
 
-			resolvedSource, _ := helper.ResolveSource(selectedCategory, now, ws, conditions)
+			// The drawn category decides the run's multi-monitor mode: a
+			// "same" category takes every monitor with one mirrored image
+			// (fade allowed), while a "per-monitor" one hands each monitor
+			// its own draw among the per-monitor-eligible categories.
+			if config.MultiMonitorModeForCategory(g.Viper, selectedCategory.MultiMonitorOverride()) == "per-monitor" {
+				handled, err := runPerMonitor(g, perMonitorEligible(g.Viper, active), now, ws, conditions, wallhavenDirs)
+				if handled {
+					return err
+				}
+				// Fall through to the single-wallpaper flow.
+			}
+
+			resolvedSource, _ := helper.ResolveSource(selectedCategory, now, ws, conditions, wallhavenDirs[selectedCategory])
 			sourcePath := config.ExpandTilde(resolvedSource)
 
 			files, err := helper.ReadDirectory(sourcePath)
@@ -104,7 +118,7 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 				g.Logger.Warn("Could not get previous wallpaper", g.Logger.Args("error", err))
 			}
 
-			err = helper.SetWallpaperFromFile(sourcePath, selectedFile, config.TransitionEnabled(g.Viper))
+			err = helper.SetWallpaperFromFile(sourcePath, selectedFile, config.TransitionEnabledForCategory(g.Viper, selectedCategory.TransitionOverride()))
 			if err != nil {
 				g.Logger.Error("Error setting the wallpaper", g.Logger.Args("error", err))
 				return fmt.Errorf("error setting the wallpaper: %w", err)
@@ -137,6 +151,7 @@ func RootCmd(g *models.Gopaper, version string) *cobra.Command {
 	cmd.AddCommand(InitCmd())
 	cmd.AddCommand(PrevCmd())
 	cmd.AddCommand(NextCmd())
+	cmd.AddCommand(HistoryCmd())
 	cmd.AddCommand(ValidateCmd())
 	cmd.AddCommand(ShowCmd())
 	cmd.AddCommand(selfUpdateCmd(version))
@@ -181,6 +196,18 @@ func preRunHandler(g *models.Gopaper, configPath string) error {
 // recordHistory appends the current wallpaper to the persistent history file,
 // unless configuration.history.enabled is explicitly set to false.
 func recordHistory(g *models.Gopaper, wallpaper string, cat *models.Categories) error {
+	return recordHistoryEntry(g, history.Entry{
+		Path:      wallpaper,
+		Category:  cat.Name,
+		Mode:      cat.Mode,
+		Timestamp: time.Now(),
+	})
+}
+
+// recordHistoryEntry appends a pre-built entry (single or per-monitor) to
+// the persistent history file, unless configuration.history.enabled is
+// explicitly set to false.
+func recordHistoryEntry(g *models.Gopaper, entry history.Entry) error {
 	if !config.HistoryEnabled(g.Viper) {
 		return nil
 	}
@@ -193,11 +220,38 @@ func recordHistory(g *models.Gopaper, wallpaper string, cat *models.Categories) 
 	if err != nil {
 		return err
 	}
-	history.Append(h, history.Entry{
-		Path:      wallpaper,
-		Category:  cat.Name,
-		Mode:      cat.Mode,
-		Timestamp: time.Now(),
-	})
+	history.Append(h, entry)
 	return history.Save(histPath, h)
+}
+
+// refreshWallhavenCaches resolves each wallhaven category's cache directory
+// and fetches one fresh image into it. Best-effort on both counts: a
+// failure only means that category runs on its existing cache (or ends up
+// ineligible when the cache dir couldn't even be resolved).
+func refreshWallhavenCaches(g *models.Gopaper, candidates []*models.Categories) map[*models.Categories]string {
+	apiKey := config.LoadWallhavenAPIKey(g.Viper)
+	dirs := map[*models.Categories]string{}
+	for _, c := range candidates {
+		if c.Wallhaven == nil {
+			continue
+		}
+		dir, err := config.WallhavenCacheDir(g.Viper, c.Name, c.Wallhaven.Cache)
+		if err != nil {
+			g.Logger.Warn("could not resolve wallhaven cache directory, skipping category",
+				g.Logger.Args("category", c.Name, "error", err))
+			continue
+		}
+		dirs[c] = dir
+
+		if err := wallhaven.Refresh(wallhaven.Config{
+			Query:      c.Wallhaven.Query,
+			Purity:     c.Wallhaven.Purity,
+			APIKey:     apiKey,
+			CacheLimit: c.Wallhaven.CacheLimit,
+		}, dir); err != nil {
+			g.Logger.Warn("wallhaven refresh failed, using cached images if any",
+				g.Logger.Args("category", c.Name, "error", err))
+		}
+	}
+	return dirs
 }

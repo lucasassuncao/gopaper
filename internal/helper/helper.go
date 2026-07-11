@@ -108,8 +108,11 @@ func GetRandomFile(files []os.DirEntry, filter *filters.Compiled) (string, error
 
 // ResolveSource returns the source directory a category should use at time
 // now, given the current weather snapshot ws (nil when weather is
-// unavailable or not configured) and the named conditions declared in
-// configuration.conditions. Plain categories return their source directly.
+// unavailable or not configured), the named conditions declared in
+// configuration.conditions, and wallhavenDir, the pre-resolved cache
+// directory for this category when it has a wallhaven source ("" otherwise).
+// Plain categories return their source directly; wallhaven categories
+// return their cache directory.
 //
 // For a category with variants, every variant whose condition currently
 // holds is a candidate; the candidate with the highest priority wins
@@ -117,7 +120,10 @@ func GetRandomFile(files []os.DirEntry, filter *filters.Compiled) (string, error
 // comes from its named condition's priority (0 if unset); a variant using
 // inline hours has priority 0. ok is false when no variant's condition
 // holds, meaning the category is ineligible for this run.
-func ResolveSource(cat *models.Categories, now time.Time, ws *weather.Snapshot, conditions map[string]models.Condition) (string, bool) {
+func ResolveSource(cat *models.Categories, now time.Time, ws *weather.Snapshot, conditions map[string]models.Condition, wallhavenDir string) (string, bool) {
+	if cat.Wallhaven != nil {
+		return wallhavenDir, wallhavenDir != ""
+	}
 	if len(cat.Variants) == 0 {
 		return cat.Source, true
 	}
@@ -251,6 +257,35 @@ func SetWallpaperFromPath(fullPath string, fade bool) error {
 		return fmt.Errorf("error setting wallpaper: %v", err)
 	}
 	return nil
+}
+
+// MonitorTarget pairs a monitor's device path with the wallpaper file to
+// apply to it.
+type MonitorTarget struct {
+	DevicePath string
+	Path       string
+}
+
+// ListMonitors returns the connected monitors' device paths in Windows
+// enumeration order (index 0 is "monitor 1" in the configuration). It
+// errors on non-Windows platforms and when the enumeration API is
+// unavailable; callers should fall back to the single-wallpaper flow.
+func ListMonitors() ([]string, error) {
+	return monitorDevicePaths()
+}
+
+// SetWallpapersPerMonitor applies each target's Path to its DevicePath.
+// This is always an instant swap — the native crossfade cannot target
+// monitors individually. Every target is attempted even if one fails; the
+// first error is returned.
+func SetWallpapersPerMonitor(targets []MonitorTarget) error {
+	var firstErr error
+	for _, t := range targets {
+		if err := setWallpaperOnMonitor(t.DevicePath, t.Path); err != nil && firstErr == nil {
+			firstErr = fmt.Errorf("could not set wallpaper on monitor %q: %w", t.DevicePath, err)
+		}
+	}
+	return firstErr
 }
 
 // GetPreviousWallpaper returns the path of the previous wallpaper.

@@ -20,9 +20,40 @@ type Config struct {
 type Configuration struct {
 	Logging    Logging              `yaml:"logging" mapstructure:"logging"`
 	History    History              `yaml:"history" mapstructure:"history"`
-	Transition string               `yaml:"transition,omitempty" mapstructure:"transition"`
+	Behavior   *Behavior            `yaml:"behavior,omitempty" mapstructure:"behavior"`
 	Weather    *WeatherConfig       `yaml:"weather,omitempty" mapstructure:"weather"`
+	Wallhaven  *WallhavenConfig     `yaml:"wallhaven,omitempty" mapstructure:"wallhaven"`
 	Conditions map[string]Condition `yaml:"conditions,omitempty" mapstructure:"conditions"`
+}
+
+// Behavior groups how a wallpaper change is applied. At configuration level
+// it sets the run defaults; a category may declare its own behavior block,
+// whose non-empty fields override the defaults when that category is
+// selected.
+type Behavior struct {
+	Transition   string `yaml:"transition,omitempty" mapstructure:"transition"`
+	MultiMonitor string `yaml:"multi-monitor,omitempty" mapstructure:"multi-monitor"`
+}
+
+func (Behavior) Metadata() map[string]*metadata.Node {
+	return map[string]*metadata.Node{
+		"transition": {FieldMeta: editor.FieldMeta{
+			Description: "Visual effect used when the wallpaper changes. \"fade\" uses the native Windows crossfade (falls back to an instant change on other platforms or if unavailable); \"none\" always changes instantly. Per-monitor changes are always instant regardless of this setting.",
+			OneOf:       []string{"fade", "none"},
+			Default:     "fade",
+		}},
+		"multi-monitor": {FieldMeta: editor.FieldMeta{
+			Description: "How wallpapers are applied on multi-monitor setups. \"same\" mirrors one image on every monitor (fade works); \"per-monitor\" gives each monitor its own image (always instant). On a category, this decides what happens when that category wins the draw.",
+			OneOf:       []string{"same", "per-monitor"},
+			Default:     "same",
+		}},
+	}
+}
+
+// WallhavenConfig holds the global Wallhaven API settings shared by every
+// wallhaven-sourced category.
+type WallhavenConfig struct {
+	APIKey string `yaml:"api-key,omitempty" mapstructure:"api-key"`
 }
 
 // WeatherConfig configures the weather data source used by
@@ -98,13 +129,14 @@ func (Configuration) Metadata() map[string]*metadata.Node {
 		"history": {FieldMeta: editor.FieldMeta{
 			Description: "Wallpaper history settings, used by the prev/next commands.",
 		}},
-		"transition": {FieldMeta: editor.FieldMeta{
-			Description: "Visual effect used when the wallpaper changes. \"fade\" uses the native Windows crossfade (falls back to an instant change on other platforms or if unavailable); \"none\" always changes instantly.",
-			OneOf:       []string{"fade", "none"},
-			Default:     "fade",
+		"behavior": {FieldMeta: editor.FieldMeta{
+			Description: "Default behavior for wallpaper changes (transition, multi-monitor). Categories can override it with their own behavior block.",
 		}},
 		"weather": {FieldMeta: editor.FieldMeta{
 			Description: "Location and provider settings for weather-based conditions. Required if any entry in configuration.conditions uses weather, wind-speed-min, or wind-speed-max.",
+		}},
+		"wallhaven": {FieldMeta: editor.FieldMeta{
+			Description: "Global Wallhaven API settings shared by every category with a wallhaven source.",
 		}},
 		"conditions": {FieldMeta: editor.FieldMeta{
 			Description: "Named, reusable conditions (time-of-day or weather) referenced by categories[].variants[].condition.",
@@ -250,8 +282,18 @@ func (Categories) Metadata() map[string]*metadata.Node {
 			Description: "Whether this category is eligible for random selection.",
 			Default:     "true",
 		}},
+		"behavior": {FieldMeta: editor.FieldMeta{
+			Description: "Overrides configuration.behavior for this category. Non-empty fields win; unset fields inherit the configuration-level defaults.",
+		}},
+		"monitor": {FieldMeta: editor.FieldMeta{
+			Description: "Restricts this category to one monitor (1-based) in per-monitor runs. Unset makes it eligible for any monitor.",
+			Min:         "1",
+		}},
 		"filter": {FieldMeta: editor.FieldMeta{
 			Description: "Optional constraints narrowing which files in source are eligible, beyond the fixed image-extension check.",
+		}},
+		"wallhaven": {FieldMeta: editor.FieldMeta{
+			Description: "Sources this category's images from the Wallhaven API instead of a local directory (downloads are cached locally). Mutually exclusive with source and variants.",
 		}},
 	}
 }
@@ -263,12 +305,75 @@ type Gopaper struct {
 }
 
 type Categories struct {
-	Name     string    `yaml:"name" mapstructure:"name"`
-	Source   string    `yaml:"source,omitempty" mapstructure:"source"`
-	Mode     string    `yaml:"mode" mapstructure:"mode"`
-	Enabled  bool      `yaml:"enabled" mapstructure:"enabled"`
-	Filter   *Filter   `yaml:"filter,omitempty" mapstructure:"filter"`
-	Variants []Variant `yaml:"variants,omitempty" mapstructure:"variants"`
+	Name      string           `yaml:"name" mapstructure:"name"`
+	Source    string           `yaml:"source,omitempty" mapstructure:"source"`
+	Mode      string           `yaml:"mode" mapstructure:"mode"`
+	Enabled   bool             `yaml:"enabled" mapstructure:"enabled"`
+	Behavior  *Behavior        `yaml:"behavior,omitempty" mapstructure:"behavior"`
+	Monitor   int              `yaml:"monitor,omitempty" mapstructure:"monitor"`
+	Filter    *Filter          `yaml:"filter,omitempty" mapstructure:"filter"`
+	Variants  []Variant        `yaml:"variants,omitempty" mapstructure:"variants"`
+	Wallhaven *WallhavenSource `yaml:"wallhaven,omitempty" mapstructure:"wallhaven"`
+}
+
+// TransitionOverride returns this category's transition override, or ""
+// when it has none (the configuration-level behavior then applies).
+func (c *Categories) TransitionOverride() string {
+	if c == nil || c.Behavior == nil {
+		return ""
+	}
+	return c.Behavior.Transition
+}
+
+// MultiMonitorOverride returns this category's multi-monitor override, or
+// "" when it has none (the configuration-level behavior then applies).
+func (c *Categories) MultiMonitorOverride() string {
+	if c == nil || c.Behavior == nil {
+		return ""
+	}
+	return c.Behavior.MultiMonitor
+}
+
+// WallhavenSource makes a category draw its images from the Wallhaven API
+// instead of a local directory. Downloaded images are kept in a local cache
+// directory, which acts as the category's source for selection and offline
+// runs. Mutually exclusive with Source/Variants.
+type WallhavenSource struct {
+	Query      string `yaml:"query" mapstructure:"query"`
+	Purity     string `yaml:"purity,omitempty" mapstructure:"purity"`
+	Cache      string `yaml:"cache,omitempty" mapstructure:"cache"`
+	CacheLimit int    `yaml:"cache-limit,omitempty" mapstructure:"cache-limit"`
+}
+
+func (WallhavenConfig) Metadata() map[string]*metadata.Node {
+	return map[string]*metadata.Node{
+		"api-key": {FieldMeta: editor.FieldMeta{
+			Description: "Wallhaven API key. Optional: without it searches run anonymously and only sfw purity is allowed; sketchy/nsfw require a key.",
+		}},
+	}
+}
+
+func (WallhavenSource) Metadata() map[string]*metadata.Node {
+	return map[string]*metadata.Node{
+		"query": {FieldMeta: editor.FieldMeta{
+			Description: "Wallhaven search query used to fetch images for this category.",
+			Required:    true,
+			Example:     `query: "landscape"`,
+		}},
+		"purity": {FieldMeta: editor.FieldMeta{
+			Description: "Purity tier of the results. sketchy and nsfw require configuration.wallhaven.api-key.",
+			OneOf:       []string{"sfw", "sketchy", "nsfw"},
+			Default:     "sfw",
+		}},
+		"cache": {FieldMeta: editor.FieldMeta{
+			Description: "Directory where downloaded images are kept (acts as this category's source). Defaults to a wallhaven-cache subdirectory next to the history file.",
+		}},
+		"cache-limit": {FieldMeta: editor.FieldMeta{
+			Description: "Maximum number of images kept in the cache directory; the oldest are removed first.",
+			Min:         "1",
+			Default:     "100",
+		}},
+	}
 }
 
 // Variant is one conditioned rendition of a category's image collection

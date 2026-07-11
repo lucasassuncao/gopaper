@@ -111,6 +111,25 @@ No flags. Disabled entirely when `configuration.history.enabled: false` — ther
 
 ---
 
+## `gopaper history`
+
+Opens an interactive list of every wallpaper recorded in history (newest first). Arrow keys
+(or `j`/`k`) navigate, `/` filters by filename or category, **Enter reapplies the selected
+wallpaper** (with the configured transition; per-monitor entries are reapplied per monitor),
+and `q` quits without changing anything. Reapplying also moves the history cursor, so a
+subsequent `gopaper prev`/`next` continues from that entry.
+
+```pwsh
+gopaper history
+gopaper history --category "Saltern Study"
+```
+
+| Flag | Description |
+|---|---|
+| `--category <name>` | Only show entries from this category (exact match). |
+
+---
+
 ## `gopaper self-update`
 
 Downloads a release from GitHub and replaces the running binary. The old binary is kept as `gopaper.old` until the next run, and the downloaded binary's checksum is verified against the release's published manifest when one exists.

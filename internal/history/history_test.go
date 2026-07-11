@@ -1,6 +1,7 @@
 package history
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -151,6 +152,46 @@ func TestLoadSave_RoundTrip(t *testing.T) {
 	}
 	if loaded.Entries[0].Path != "wall2.jpg" {
 		t.Errorf("expected wall2.jpg at index 0, got %s", loaded.Entries[0].Path)
+	}
+}
+
+func TestLoadSave_MonitorsRoundTrip(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "history.json")
+
+	e := entry("primary.jpg")
+	e.Monitors = []MonitorEntry{
+		{Monitor: 1, Path: "primary.jpg", Category: "Cat A"},
+		{Monitor: 2, Path: "secondary.jpg", Category: "Cat B"},
+	}
+	h := &History{MaxEntries: 10}
+	Append(h, e)
+
+	if err := Save(path, h); err != nil {
+		t.Fatalf("Save failed: %v", err)
+	}
+	loaded, err := Load(path, 0)
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	got := loaded.Entries[0].Monitors
+	if len(got) != 2 || got[0].Monitor != 1 || got[1].Path != "secondary.jpg" || got[1].Category != "Cat B" {
+		t.Errorf("monitors did not round-trip: %+v", got)
+	}
+}
+
+func TestLoad_OldFormatWithoutMonitors(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "history.json")
+	old := `{"entries":[{"path":"wall1.jpg","category":"Cat","mode":"crop","timestamp":"2026-07-10T22:14:00Z"}],"current_index":0,"max_entries":50}`
+	if err := os.WriteFile(path, []byte(old), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, err := Load(path, 0)
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+	if len(loaded.Entries) != 1 || loaded.Entries[0].Monitors != nil {
+		t.Errorf("old-format entry should decode with nil Monitors, got %+v", loaded.Entries[0])
 	}
 }
 

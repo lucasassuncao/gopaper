@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/lucasassuncao/gopaper/internal/history"
 	"github.com/lucasassuncao/gopaper/internal/models"
@@ -92,11 +93,74 @@ func LoadDefault(v *viper.Viper) error {
 	)
 }
 
-// TransitionEnabled reports whether wallpaper changes should use the fade
-// transition. Defaults to true; set configuration.transition to "none" to
-// change wallpapers instantly.
-func TransitionEnabled(v *viper.Viper) bool {
-	return v.GetString("configuration.transition") != "none"
+// TransitionEnabledForCategory reports whether wallpaper changes for a
+// category should use the fade transition. A non-empty categoryTransition
+// (categories[].behavior.transition) overrides the configuration-level
+// behavior.transition; both default to fade when unset.
+func TransitionEnabledForCategory(v *viper.Viper, categoryTransition string) bool {
+	t := categoryTransition
+	if t == "" {
+		t = v.GetString("configuration.behavior.transition")
+	}
+	return t != "none"
+}
+
+// MultiMonitorMode returns the configured default multi-monitor behavior:
+// "per-monitor" when explicitly set, otherwise "same".
+func MultiMonitorMode(v *viper.Viper) string {
+	if v.GetString("configuration.behavior.multi-monitor") == "per-monitor" {
+		return "per-monitor"
+	}
+	return "same"
+}
+
+// MultiMonitorModeForCategory resolves the effective multi-monitor mode for
+// a category: its own behavior.multi-monitor when set, otherwise the
+// configuration-level default.
+func MultiMonitorModeForCategory(v *viper.Viper, categoryMode string) string {
+	switch categoryMode {
+	case "same", "per-monitor":
+		return categoryMode
+	}
+	return MultiMonitorMode(v)
+}
+
+// LoadWallhavenAPIKey returns configuration.wallhaven.api-key, or "" when unset.
+func LoadWallhavenAPIKey(v *viper.Viper) string {
+	return v.GetString("configuration.wallhaven.api-key")
+}
+
+// WallhavenCacheDir resolves a category's Wallhaven cache directory: the
+// category's own cache override when set (tilde-expanded), otherwise a
+// wallhaven-cache/<slug> subdirectory next to the history file.
+func WallhavenCacheDir(v *viper.Viper, categoryName, override string) (string, error) {
+	if override != "" {
+		return ExpandTilde(override), nil
+	}
+	histPath, err := HistoryPath(v)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(histPath), "wallhaven-cache", slugify(categoryName)), nil
+}
+
+// slugify lowercases name and collapses every non-alphanumeric run into a
+// single "-", trimmed at both ends, for use as a directory name.
+func slugify(name string) string {
+	var b strings.Builder
+	lastDash := true // suppress a leading dash
+	for _, r := range strings.ToLower(name) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+			lastDash = false
+			continue
+		}
+		if !lastDash {
+			b.WriteByte('-')
+			lastDash = true
+		}
+	}
+	return strings.TrimSuffix(b.String(), "-")
 }
 
 // HistoryEnabled reports whether wallpaper changes should be recorded to

@@ -11,6 +11,7 @@ import (
 	"unsafe"
 
 	"github.com/reujab/wallpaper"
+	"golang.org/x/sys/windows"
 )
 
 // Explorer switches into slideshow mode asynchronously after
@@ -38,13 +39,15 @@ var (
 
 // IDesktopWallpaper vtable slots (after the 3 IUnknown slots).
 const (
-	idwSetWallpaper        = 3
-	idwGetWallpaper        = 4
-	idwSetPosition         = 10
-	idwSetSlideshow        = 12
-	idwSetSlideshowOptions = 14
-	idwAdvanceSlideshow    = 16
-	idwGetStatus           = 17
+	idwSetWallpaper              = 3
+	idwGetWallpaper              = 4
+	idwGetMonitorDevicePathAt    = 5
+	idwGetMonitorDevicePathCount = 6
+	idwSetPosition               = 10
+	idwSetSlideshow              = 12
+	idwSetSlideshowOptions       = 14
+	idwAdvanceSlideshow          = 16
+	idwGetStatus                 = 17
 )
 
 const (
@@ -294,6 +297,71 @@ func advanceToWallpaper(fullPath string) error {
 		time.Sleep(250 * time.Millisecond)
 	}
 	return advErr
+}
+
+// utf16PtrToStringAndFree reads a NUL-terminated CoTaskMem-allocated wide
+// string returned by a COM out-parameter, frees it, and returns its Go form.
+func utf16PtrToStringAndFree(p *uint16) string {
+	if p == nil {
+		return ""
+	}
+	defer coTaskMemFree(uintptr(unsafe.Pointer(p)))
+	return windows.UTF16PtrToString(p)
+}
+
+// monitorDevicePaths returns the device path of every monitor Explorer
+// knows about, in IDesktopWallpaper enumeration order (index 0 is
+// "monitor 1" in the configuration).
+func monitorDevicePaths() ([]string, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	dw, err := newDesktopWallpaper()
+	if err != nil {
+		return nil, err
+	}
+	defer closeDesktopWallpaper(dw)
+
+	var count uint32
+	if err := vtblCall(dw, idwGetMonitorDevicePathCount, uintptr(unsafe.Pointer(&count))); err != nil {
+		return nil, err
+	}
+
+	paths := make([]string, 0, count)
+	for i := uint32(0); i < count; i++ {
+		var id *uint16
+		if err := vtblCall(dw, idwGetMonitorDevicePathAt, uintptr(i), uintptr(unsafe.Pointer(&id))); err != nil {
+			return nil, err
+		}
+		paths = append(paths, utf16PtrToStringAndFree(id))
+	}
+	return paths, nil
+}
+
+// setWallpaperOnMonitor applies fullPath to the monitor identified by
+// devicePath via IDesktopWallpaper::SetWallpaper. This is always an instant
+// swap: the crossfade trick in setWallpaperFade relies on a one-item
+// slideshow, which forces the same image onto every monitor and therefore
+// cannot target monitors individually.
+func setWallpaperOnMonitor(devicePath, fullPath string) error {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	dw, err := newDesktopWallpaper()
+	if err != nil {
+		return err
+	}
+	defer closeDesktopWallpaper(dw)
+
+	monitor, err := syscall.UTF16PtrFromString(devicePath)
+	if err != nil {
+		return err
+	}
+	path, err := syscall.UTF16PtrFromString(fullPath)
+	if err != nil {
+		return err
+	}
+	return vtblCall(dw, idwSetWallpaper, uintptr(unsafe.Pointer(monitor)), uintptr(unsafe.Pointer(path)))
 }
 
 func desktopWallpaperPosition(mode string) (uintptr, bool) {

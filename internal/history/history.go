@@ -17,12 +17,23 @@ var (
 	ErrAlreadyNewest = errors.New("already at the most recent wallpaper in history")
 )
 
-// Entry represents a single wallpaper that was applied.
+// Entry represents a single wallpaper that was applied. For a per-monitor
+// change, Path/Category mirror the primary monitor's selection and Monitors
+// holds every monitor's wallpaper; for a regular change Monitors is empty.
 type Entry struct {
-	Path      string    `json:"path"`
-	Category  string    `json:"category"`
-	Mode      string    `json:"mode"`
-	Timestamp time.Time `json:"timestamp"`
+	Path      string         `json:"path"`
+	Category  string         `json:"category"`
+	Mode      string         `json:"mode"`
+	Timestamp time.Time      `json:"timestamp"`
+	Monitors  []MonitorEntry `json:"monitors,omitempty"`
+}
+
+// MonitorEntry is one monitor's wallpaper within a per-monitor change.
+// Monitor is 1-based, matching the categories[].monitor config field.
+type MonitorEntry struct {
+	Monitor  int    `json:"monitor"`
+	Path     string `json:"path"`
+	Category string `json:"category"`
 }
 
 // History is the persistent navigation state for wallpaper history.

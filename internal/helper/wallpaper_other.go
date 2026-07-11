@@ -15,3 +15,14 @@ func setWallpaperFade(fullPath string) error {
 func setWallpaperPosition(mode string) error {
 	return errors.New("wallpaper fade transition is only supported on Windows")
 }
+
+// monitorDevicePaths and setWallpaperOnMonitor back the per-monitor mode,
+// which relies on IDesktopWallpaper and is therefore Windows-only. The
+// caller treats an error here as "fall back to the single-wallpaper flow".
+func monitorDevicePaths() ([]string, error) {
+	return nil, errors.New("per-monitor wallpapers are only supported on Windows")
+}
+
+func setWallpaperOnMonitor(devicePath, fullPath string) error {
+	return errors.New("per-monitor wallpapers are only supported on Windows")
+}

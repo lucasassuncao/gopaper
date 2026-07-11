@@ -5,7 +5,7 @@ Gopaper is a small, cross-platform command-line tool written in Go that selects 
 **Features**
 - Randomly selects a wallpaper from enabled categories
 - Supports multiple wallpaper display modes (crop, tile, stretch, span, fit, center)
-- Smooth native crossfade transition on Windows (`configuration.transition: fade`)
+- Smooth native crossfade transition on Windows (`behavior.transition: fade`)
 - Dynamic wallpapers: categories that switch source by time of day, calendar date, or live weather (via [Open-Meteo](https://open-meteo.com/))
 - Configurable logging and output
 - Generates a template `gopaper.yaml` configuration file
@@ -101,7 +101,8 @@ directories automatically, based on the time of day, the calendar date, or live 
 
 ```yaml
 configuration:
-  transition: fade
+  behavior:
+    transition: fade
   weather:
     provider: open-meteo
     latitude: -23.55
@@ -125,6 +126,53 @@ See [docs/DYNAMIC-WALLPAPERS.md](docs/DYNAMIC-WALLPAPERS.md) for the full guide:
 variant paths, named conditions, calendar date ranges (including ones that span New
 Year's Eve), weather thresholds (sky, wind, temperature), and how priority resolves ties
 when more than one variant is active at once.
+
+### Wallhaven source
+
+Instead of a local directory, a category can pull its images from the
+[Wallhaven](https://wallhaven.cc) API — downloads are cached locally, so the category keeps
+working offline:
+
+```yaml
+configuration:
+  wallhaven:
+    api-key: "xxxxxxxx"   # optional; required only for sketchy/nsfw purity
+
+categories:
+  - name: "Wallhaven Landscapes"
+    wallhaven:
+      query: "landscape"
+      purity: sfw          # sfw (default) | sketchy | nsfw
+      cache-limit: 100
+    mode: crop
+    enabled: true
+```
+
+### Behavior (transition & multi-monitor)
+
+`configuration.behavior` sets how changes are applied; any category can override it with
+its own `behavior` block, which wins when that category is drawn:
+
+```yaml
+configuration:
+  behavior:
+    transition: fade           # fade | none
+    multi-monitor: per-monitor # same | per-monitor
+
+categories:
+  - name: "Saltern Study"      # when drawn, mirrors on all monitors WITH fade
+    behavior:
+      multi-monitor: same
+    # ...
+  - name: "Custom Selection"   # participates in per-monitor draws (instant)
+    monitor: 1                 # optional: pin to monitor 1
+    # ...
+```
+
+**The drawn category decides the run:** effective `same` mirrors one image everywhere (fade
+works); effective `per-monitor` gives each monitor its own draw among per-monitor-eligible
+categories — always instant, since the native crossfade can't target monitors individually.
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for details and limitations.
 
 ## Editing the Configuration
 
@@ -234,6 +282,13 @@ gopaper edit
 
 ```pwsh
 gopaper -c C:\Users\lucas\configs\gopaper.yaml
+```
+
+- Browse the history and reapply any past wallpaper:
+
+```pwsh
+gopaper history
+gopaper history --category "Saltern Study"
 ```
 
 ## Contributing

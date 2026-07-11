@@ -108,15 +108,19 @@ var GopaperValidators = []editor.Validator{
 		return errs
 	}),
 
-	// Category source/variants shape, and per-variant hours/condition rules.
-	// A category either has a plain source (no variants) or variants
-	// (source optional there, but required as the base directory for any
-	// variant with a relative source). Each variant defines exactly one of
-	// hours/condition; a condition name must exist in
-	// configuration.conditions.
+	// Category source/variants/wallhaven shape, and per-variant
+	// hours/condition rules. A category has exactly one of: a plain source,
+	// variants (source optional there, but required as the base directory
+	// for any variant with a relative source), or a wallhaven block (which
+	// requires a query, and an API key for sketchy/nsfw purity). Each
+	// variant defines exactly one of hours/condition; a condition name must
+	// exist in configuration.conditions.
 	editor.ValidatorFunc(func(in editor.ValidationInput) []editor.Violation {
 		var doc struct {
 			Configuration struct {
+				Wallhaven *struct {
+					APIKey string `yaml:"api-key"`
+				} `yaml:"wallhaven"`
 				Conditions map[string]struct {
 					Hours        string   `yaml:"hours"`
 					Weather      []string `yaml:"weather"`
@@ -131,18 +135,38 @@ var GopaperValidators = []editor.Validator{
 					Hours     string `yaml:"hours"`
 					Condition string `yaml:"condition"`
 				} `yaml:"variants"`
+				Wallhaven *struct {
+					Query  string `yaml:"query"`
+					Purity string `yaml:"purity"`
+				} `yaml:"wallhaven"`
 			} `yaml:"categories"`
 		}
 		if err := yaml.Unmarshal(in.Raw, &doc); err != nil {
 			return nil
 		}
+		hasAPIKey := doc.Configuration.Wallhaven != nil && doc.Configuration.Wallhaven.APIKey != ""
 		var errs []editor.Violation
 		for i, c := range doc.Categories {
+			if c.Wallhaven != nil {
+				if c.Source != "" || len(c.Variants) > 0 {
+					errs = append(errs, editor.Violation{
+						Path:    fmt.Sprintf("categories[%d].wallhaven", i),
+						Message: "wallhaven is mutually exclusive with source/variants - define one or the other",
+					})
+				}
+				if (c.Wallhaven.Purity == "sketchy" || c.Wallhaven.Purity == "nsfw") && !hasAPIKey {
+					errs = append(errs, editor.Violation{
+						Path:    fmt.Sprintf("categories[%d].wallhaven.purity", i),
+						Message: fmt.Sprintf("%q requires configuration.wallhaven.api-key (anonymous searches only return sfw results)", c.Wallhaven.Purity),
+					})
+				}
+				continue
+			}
 			if len(c.Variants) == 0 {
 				if c.Source == "" {
 					errs = append(errs, editor.Violation{
 						Path:    fmt.Sprintf("categories[%d].source", i),
-						Message: "define either source or variants",
+						Message: "define one of source, variants, or wallhaven",
 					})
 				}
 				continue

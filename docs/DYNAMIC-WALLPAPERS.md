@@ -198,7 +198,8 @@ configuration:
   logging:
     output: console
     level: info
-  transition: fade
+  behavior:
+    transition: fade
 
   weather:
     provider: open-meteo

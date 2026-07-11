@@ -15,6 +15,7 @@ import "github.com/lucasassuncao/gopaper/internal/cmd"
 - [func ConfigurationPreset\(name string\) \*models.Configuration](<#ConfigurationPreset>)
 - [func EditCmd\(\) \*cobra.Command](<#EditCmd>)
 - [func FilterCategories\(all \[\]\*models.Categories, names \[\]string, includeDisabled bool, logger \*pterm.Logger\) \(\[\]\*models.Categories, error\)](<#FilterCategories>)
+- [func HistoryCmd\(\) \*cobra.Command](<#HistoryCmd>)
 - [func InitCmd\(\) \*cobra.Command](<#InitCmd>)
 - [func ListOfCategoriesPresets\(\) \[\]string](<#ListOfCategoriesPresets>)
 - [func ListOfConfigurationPresets\(\) \[\]string](<#ListOfConfigurationPresets>)
@@ -134,12 +135,15 @@ var GopaperValidators = []editor.Validator{
     editor.ValidatorFunc(func(in editor.ValidationInput) []editor.Violation {
         var doc struct {
             Configuration struct {
+                Wallhaven *struct {
+                    APIKey string `yaml:"api-key"`
+                }   `yaml:"wallhaven"`
                 Conditions map[string]struct {
                     Hours        string   `yaml:"hours"`
                     Weather      []string `yaml:"weather"`
                     WindSpeedMin *float64 `yaml:"wind-speed-min"`
                     WindSpeedMax *float64 `yaml:"wind-speed-max"`
-                } `yaml:"conditions"`
+                }   `yaml:"conditions"`
             }   `yaml:"configuration"`
             Categories []struct {
                 Source   string `yaml:"source"`
@@ -148,18 +152,38 @@ var GopaperValidators = []editor.Validator{
                     Hours     string `yaml:"hours"`
                     Condition string `yaml:"condition"`
                 }   `yaml:"variants"`
+                Wallhaven *struct {
+                    Query  string `yaml:"query"`
+                    Purity string `yaml:"purity"`
+                }   `yaml:"wallhaven"`
             }   `yaml:"categories"`
         }
         if err := yaml.Unmarshal(in.Raw, &doc); err != nil {
             return nil
         }
+        hasAPIKey := doc.Configuration.Wallhaven != nil && doc.Configuration.Wallhaven.APIKey != ""
         var errs []editor.Violation
         for i, c := range doc.Categories {
+            if c.Wallhaven != nil {
+                if c.Source != "" || len(c.Variants) > 0 {
+                    errs = append(errs, editor.Violation{
+                        Path:    fmt.Sprintf("categories[%d].wallhaven", i),
+                        Message: "wallhaven is mutually exclusive with source/variants - define one or the other",
+                    })
+                }
+                if (c.Wallhaven.Purity == "sketchy" || c.Wallhaven.Purity == "nsfw") && !hasAPIKey {
+                    errs = append(errs, editor.Violation{
+                        Path:    fmt.Sprintf("categories[%d].wallhaven.purity", i),
+                        Message: fmt.Sprintf("%q requires configuration.wallhaven.api-key (anonymous searches only return sfw results)", c.Wallhaven.Purity),
+                    })
+                }
+                continue
+            }
             if len(c.Variants) == 0 {
                 if c.Source == "" {
                     errs = append(errs, editor.Violation{
                         Path:    fmt.Sprintf("categories[%d].source", i),
-                        Message: "define either source or variants",
+                        Message: "define one of source, variants, or wallhaven",
                     })
                 }
                 continue
@@ -403,6 +427,15 @@ FilterCategories returns the subset of all eligible for random selection.
 
 When names is empty, it behaves like today: enabled categories only, unless includeDisabled is set. When names is non\-empty, each name is looked up in all; an unknown name is an error. A disabled category named explicitly is skipped with a warning unless includeDisabled is set.
 
+<a name="HistoryCmd"></a>
+## func [HistoryCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/history.go#L19>)
+
+```go
+func HistoryCmd() *cobra.Command
+```
+
+HistoryCmd opens an interactive TUI listing the wallpaper history; Enter reapplies the selected entry.
+
 <a name="InitCmd"></a>
 ## func [InitCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/init.go#L25>)
 
@@ -458,7 +491,7 @@ func PrevCmd() *cobra.Command
 PrevCmd sets the previous wallpaper from history.
 
 <a name="RootCmd"></a>
-## func [RootCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/root.go#L18>)
+## func [RootCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/root.go#L19>)
 
 ```go
 func RootCmd(g *models.Gopaper, version string) *cobra.Command
