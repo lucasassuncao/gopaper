@@ -15,12 +15,12 @@ configuration:
     enabled: true
   behavior:
     transition: fade         # fade | none
-    multi-monitor: same      # same | per-monitor
+    monitor: all              # all | per-monitor | monitor1, monitor2, ...
+    mode: crop                # crop | tile | stretch | span | fit | center
 
 categories:
   - name: "default"
     source: "C:\\wallpapers"
-    mode: "crop"             # crop | tile | stretch | span | fit | center
     enabled: true
     filter:                  # optional
       match:
@@ -66,14 +66,15 @@ override the defaults **when that category wins the draw**.
 configuration:
   behavior:
     transition: fade         # fade (default) | none
-    multi-monitor: same      # same (default) | per-monitor
+    monitor: all              # all (default) | per-monitor | monitor1, monitor2, ...
+    mode: crop                # crop (default) | tile | stretch | span | fit | center
 
 categories:
   - name: "Heavy RAWs"
     source: "C:\\Walls\\RAW"
-    mode: crop
     behavior:
       transition: none       # this category always swaps instantly
+      mode: fit               # this category always uses fit instead of the default
 ```
 
 ### `behavior.transition`
@@ -83,31 +84,52 @@ categories:
 | `fade` (default) | Native Windows crossfade between the old and new wallpaper. Falls back to an instant change on non-Windows platforms, or if the fade path fails for any reason. |
 | `none` | Instant change, no transition — the pre-fade behavior. |
 
-### `behavior.multi-monitor`
+### `behavior.mode`
+
+Wallpaper display mode — see [Wallpaper modes](#wallpaper-modes) for the six values. Defaults
+to `crop` when unset at both configuration and category level. A category's own
+`behavior.mode` overrides the configuration-level default when that category wins the draw.
+
+### `behavior.monitor`
 
 | Value | Effect |
 |---|---|
-| `same` (default) | One image mirrored on every monitor — the classic behavior; `fade` works. |
+| `all` (default) | One image mirrored on every monitor — the classic behavior; `fade` works. |
 | `per-monitor` | Each monitor gets its own category draw and image — always instant. |
+| `monitor1`, `monitor2`, ... | Pins this category to that single monitor (1-based, Windows enumeration order); every other monitor is left untouched — always instant. |
+
+Not to be confused with the category-level `monitor` field (an int, e.g. `monitor: 1`), which
+only *restricts* a category's eligibility inside a `per-monitor` draw — see below.
+
+**Not sure which index is which screen?** Run [`gopaper monitors`](COMMANDS.md#gopaper-monitors)
+— it lists every connected monitor with its 1-based index, EDID name (e.g. `ASUS VG32VQ1B`),
+and desktop position/size, so you can match `monitor1`/`monitor2` (here, and in the
+category-level `monitor: N` field below) to a physical screen before writing it into the
+config.
 
 **The drawn category decides the run.** gopaper first draws one category from the eligible
-set; that category's effective `multi-monitor` (its own override, or the configuration
+set; that category's effective `behavior.monitor` (its own override, or the configuration
 default) picks the flow:
 
-- Effective `same` → one image from it, mirrored on every monitor, with fade. Categories
-  marked `same` never take part in individual per-monitor draws — they only ever appear
-  mirrored.
+- Effective `all` → one image from it, mirrored on every monitor, with fade. Categories set
+  to `all` never take part in individual per-monitor draws — they only ever appear mirrored.
 - Effective `per-monitor` → every monitor gets its own draw among the per-monitor-eligible
-  categories. A category can be pinned to one monitor with `monitor: N` (1-based, Windows
-  enumeration order); without `monitor` it is eligible for any of them.
+  categories. A category can be further restricted to one monitor with the category-level
+  `monitor: N` field (1-based, Windows enumeration order); without it, the category is
+  eligible for any monitor. This still means competing with other eligible categories for
+  that monitor — different from `behavior.monitor: monitorN` below.
+- Effective `monitorN` → this category's own image goes straight to monitor `N`; no draw
+  against other categories, and every other monitor keeps whatever it already had. If monitor
+  `N` isn't connected, gopaper falls back to the normal single-wallpaper flow.
 
-Notes and limitations of per-monitor changes:
+Notes and limitations of per-monitor and `monitorN` changes:
 
 - **Always instant.** The native crossfade cannot target monitors individually (it relies on
   a one-item slideshow that forces the same image everywhere), so `behavior.transition` is
   ignored for them.
-- The wallpaper **mode** (`crop`, `fit`, …) is a single global setting in Windows; the mode of
-  the category chosen for monitor 1 wins.
+- The wallpaper **mode** (`crop`, `fit`, …) is a single global setting in Windows; for
+  `per-monitor` the mode of the category chosen for monitor 1 wins, for `monitorN` the pinned
+  category's own mode wins.
 - On a machine with a single monitor (or if monitor enumeration fails), gopaper falls back to
   the normal single-wallpaper flow automatically.
 - History records every monitor's image; `prev`/`next` and `gopaper history` reapply them by
@@ -132,16 +154,16 @@ categories:
       purity: sfw              # sfw (default) | sketchy | nsfw
       cache: "~/Pictures/Walls/.wallhaven-cache"   # optional
       cache-limit: 100         # optional, default 100
-    mode: crop
     enabled: true
 ```
 
 | Field | Type | Required | Default | Notes |
 |---|---|---|---|---|
 | `configuration.wallhaven.api-key` | string | no | — | Wallhaven API key. Without it, searches are anonymous and only `sfw` purity is allowed. |
+| `configuration.wallhaven.cache` | string | no | — | Base directory for every wallhaven category's cache, each in its own `<category-slug>` subdirectory. A category's own `wallhaven.cache` overrides this. |
 | `wallhaven.query` | string | yes | — | Wallhaven search query. |
 | `wallhaven.purity` | string | no | `sfw` | `sketchy`/`nsfw` require the API key (validated). |
-| `wallhaven.cache` | string | no | `<history_dir>/wallhaven-cache/<category-slug>` | Directory where downloads are kept. |
+| `wallhaven.cache` | string | no | `configuration.wallhaven.cache`, or `<history_dir>/wallhaven-cache/<category-slug>` if that's unset too | Directory where downloads are kept. |
 | `wallhaven.cache-limit` | int | no | `100` | Oldest images are pruned beyond this count. |
 
 `wallhaven` is mutually exclusive with `source` and `variants`. Each run fetches at most one
@@ -177,10 +199,9 @@ Each entry is one wallpaper source.
 | `source` | string | yes, unless `variants` or `wallhaven` is set | Directory scanned for images (`.jpg`, `.jpeg`, `.png`, `.webp`), not recursive. With `variants`, doubles as the base directory for any relative variant `source`. |
 | `variants` | list | no | Time/date/weather-conditioned renditions of this category — see [DYNAMIC-WALLPAPERS.md](DYNAMIC-WALLPAPERS.md). |
 | `wallhaven` | object | no | Sources this category from the Wallhaven API — see [`configuration.wallhaven`](#configurationwallhaven-and-categorieswallhaven). Mutually exclusive with `source`/`variants`. |
-| `mode` | string | yes | One of `crop`, `tile`, `stretch`, `span`, `fit`, `center`. |
 | `enabled` | bool | no (default `true`) | Disabled categories are skipped unless selected explicitly with `--category --include-disabled`. |
-| `behavior` | object | no | Overrides `configuration.behavior` (`transition`, `multi-monitor`) when this category wins the draw. |
-| `monitor` | int | no | Pins this category to one monitor (1-based) in per-monitor runs; ignored otherwise. |
+| `behavior` | object | no | Overrides `configuration.behavior` (`transition`, `monitor`, `mode`) when this category wins the draw. |
+| `monitor` | int | no | Restricts this category to one monitor (1-based) within `behavior.monitor: per-monitor` draws; ignored otherwise. Different from `behavior.monitor: monitorN`, which pins the category itself — see [`behavior.monitor`](#behaviormonitor). |
 | `filter` | object | no | Narrows which files in `source` are eligible — see [FILTERS.md](FILTERS.md). |
 
 A category with `variants` but no `variant` currently active (e.g. outside every `hours`

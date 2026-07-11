@@ -20,8 +20,10 @@ import "github.com/lucasassuncao/gopaper/internal/config"
 - [func LoadDefault\(v \*viper.Viper\) error](<#LoadDefault>)
 - [func LoadWallhavenAPIKey\(v \*viper.Viper\) string](<#LoadWallhavenAPIKey>)
 - [func LoadWeatherConfig\(v \*viper.Viper\) \(\*models.WeatherConfig, error\)](<#LoadWeatherConfig>)
-- [func MultiMonitorMode\(v \*viper.Viper\) string](<#MultiMonitorMode>)
-- [func MultiMonitorModeForCategory\(v \*viper.Viper, categoryMode string\) string](<#MultiMonitorModeForCategory>)
+- [func ModeForCategory\(v \*viper.Viper, categoryMode string\) string](<#ModeForCategory>)
+- [func MonitorMode\(v \*viper.Viper\) string](<#MonitorMode>)
+- [func MonitorModeForCategory\(v \*viper.Viper, categoryMode string\) string](<#MonitorModeForCategory>)
+- [func ParseMonitorMode\(mode string\) \(int, bool\)](<#ParseMonitorMode>)
 - [func TransitionEnabledForCategory\(v \*viper.Viper, categoryTransition string\) bool](<#TransitionEnabledForCategory>)
 - [func UnmarshalConfig\(m \*models.Gopaper\) \(\[\]\*models.Categories, error\)](<#UnmarshalConfig>)
 - [func WallhavenCacheDir\(v \*viper.Viper, categoryName, override string\) \(string, error\)](<#WallhavenCacheDir>)
@@ -53,7 +55,7 @@ func ExpandTilde(path string) string
 ExpandTilde expands a leading "\~" or "\~/" \(and "\~\\" on Windows\) in path to the user's home directory. Any other value — including a bare "\~username" — is returned unchanged, as is path when the home directory cannot be resolved.
 
 <a name="HistoryEnabled"></a>
-## func [HistoryEnabled](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L168>)
+## func [HistoryEnabled](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L211>)
 
 ```go
 func HistoryEnabled(v *viper.Viper) bool
@@ -62,7 +64,7 @@ func HistoryEnabled(v *viper.Viper) bool
 HistoryEnabled reports whether wallpaper changes should be recorded to history. Defaults to true when configuration.history.enabled is not set.
 
 <a name="HistoryLimit"></a>
-## func [HistoryLimit](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L220>)
+## func [HistoryLimit](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L263>)
 
 ```go
 func HistoryLimit(v *viper.Viper) int
@@ -71,7 +73,7 @@ func HistoryLimit(v *viper.Viper) int
 HistoryLimit returns the configured maximum number of history entries. A non\-positive value tells history.Load to keep its own default.
 
 <a name="HistoryPath"></a>
-## func [HistoryPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L177>)
+## func [HistoryPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L220>)
 
 ```go
 func HistoryPath(v *viper.Viper) (string, error)
@@ -80,7 +82,7 @@ func HistoryPath(v *viper.Viper) (string, error)
 HistoryPath returns the configured history file path, falling back to history.DefaultPath\(\) when configuration.history.file is not set.
 
 <a name="InitConfig"></a>
-## func [InitConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L29>)
+## func [InitConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L30>)
 
 ```go
 func InitConfig(v *viper.Viper, options ...ViperOptions) error
@@ -89,7 +91,7 @@ func InitConfig(v *viper.Viper, options ...ViperOptions) error
 InitConfig initializes Viper with the provided options and reads the config file.
 
 <a name="LoadConditions"></a>
-## func [LoadConditions](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L187>)
+## func [LoadConditions](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L230>)
 
 ```go
 func LoadConditions(v *viper.Viper) (map[string]models.Condition, error)
@@ -98,7 +100,7 @@ func LoadConditions(v *viper.Viper) (map[string]models.Condition, error)
 LoadConditions returns the named conditions declared in configuration.conditions, keyed by name. Returns an empty \(non\-nil\) map when the section is absent.
 
 <a name="LoadDefault"></a>
-## func [LoadDefault](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L82>)
+## func [LoadDefault](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L83>)
 
 ```go
 func LoadDefault(v *viper.Viper) error
@@ -107,7 +109,7 @@ func LoadDefault(v *viper.Viper) error
 LoadDefault loads gopaper.yaml from the standard search locations: next to the executable, then its conf subdirectory. Returns ConfigFileNotFoundError if none exists.
 
 <a name="LoadWallhavenAPIKey"></a>
-## func [LoadWallhavenAPIKey](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L129>)
+## func [LoadWallhavenAPIKey](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L168>)
 
 ```go
 func LoadWallhavenAPIKey(v *viper.Viper) string
@@ -116,7 +118,7 @@ func LoadWallhavenAPIKey(v *viper.Viper) string
 LoadWallhavenAPIKey returns configuration.wallhaven.api\-key, or "" when unset.
 
 <a name="LoadWeatherConfig"></a>
-## func [LoadWeatherConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L197>)
+## func [LoadWeatherConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L240>)
 
 ```go
 func LoadWeatherConfig(v *viper.Viper) (*models.WeatherConfig, error)
@@ -124,26 +126,44 @@ func LoadWeatherConfig(v *viper.Viper) (*models.WeatherConfig, error)
 
 LoadWeatherConfig returns the configuration.weather section, or nil when it is not set.
 
-<a name="MultiMonitorMode"></a>
-## func [MultiMonitorMode](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L110>)
+<a name="ModeForCategory"></a>
+## func [ModeForCategory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L157>)
 
 ```go
-func MultiMonitorMode(v *viper.Viper) string
+func ModeForCategory(v *viper.Viper, categoryMode string) string
 ```
 
-MultiMonitorMode returns the configured default multi\-monitor behavior: "per\-monitor" when explicitly set, otherwise "same".
+ModeForCategory resolves the effective wallpaper mode for a category: its own behavior.mode when set, otherwise the configuration\-level default \(configuration.behavior.mode, "crop" when that's unset too\).
 
-<a name="MultiMonitorModeForCategory"></a>
-## func [MultiMonitorModeForCategory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L120>)
+<a name="MonitorMode"></a>
+## func [MonitorMode](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L112>)
 
 ```go
-func MultiMonitorModeForCategory(v *viper.Viper, categoryMode string) string
+func MonitorMode(v *viper.Viper) string
 ```
 
-MultiMonitorModeForCategory resolves the effective multi\-monitor mode for a category: its own behavior.multi\-monitor when set, otherwise the configuration\-level default.
+MonitorMode returns the configured default monitor behavior: "per\-monitor", "monitorN" \(pinned to a single 1\-based monitor index\), or "all" \(the default, one image mirrored on every monitor\).
+
+<a name="MonitorModeForCategory"></a>
+## func [MonitorModeForCategory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L122>)
+
+```go
+func MonitorModeForCategory(v *viper.Viper, categoryMode string) string
+```
+
+MonitorModeForCategory resolves the effective monitor mode for a category: its own behavior.monitor when set, otherwise the configuration\-level default.
+
+<a name="ParseMonitorMode"></a>
+## func [ParseMonitorMode](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L142>)
+
+```go
+func ParseMonitorMode(mode string) (int, bool)
+```
+
+ParseMonitorMode reports whether mode pins a category to a single 1\-based monitor index \(e.g. "monitor1" \-\> 1, true\), as opposed to "all" or "per\-monitor".
 
 <a name="TransitionEnabledForCategory"></a>
-## func [TransitionEnabledForCategory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L100>)
+## func [TransitionEnabledForCategory](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L101>)
 
 ```go
 func TransitionEnabledForCategory(v *viper.Viper, categoryTransition string) bool
@@ -152,7 +172,7 @@ func TransitionEnabledForCategory(v *viper.Viper, categoryTransition string) boo
 TransitionEnabledForCategory reports whether wallpaper changes for a category should use the fade transition. A non\-empty categoryTransition \(categories\[\].behavior.transition\) overrides the configuration\-level behavior.transition; both default to fade when unset.
 
 <a name="UnmarshalConfig"></a>
-## func [UnmarshalConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L70>)
+## func [UnmarshalConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L71>)
 
 ```go
 func UnmarshalConfig(m *models.Gopaper) ([]*models.Categories, error)
@@ -161,16 +181,16 @@ func UnmarshalConfig(m *models.Gopaper) ([]*models.Categories, error)
 UnmarshalConfig unmarshals the config file into a struct
 
 <a name="WallhavenCacheDir"></a>
-## func [WallhavenCacheDir](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L136>)
+## func [WallhavenCacheDir](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L176>)
 
 ```go
 func WallhavenCacheDir(v *viper.Viper, categoryName, override string) (string, error)
 ```
 
-WallhavenCacheDir resolves a category's Wallhaven cache directory: the category's own cache override when set \(tilde\-expanded\), otherwise a wallhaven\-cache/\<slug\> subdirectory next to the history file.
+WallhavenCacheDir resolves a category's Wallhaven cache directory: the category's own cache override when set \(tilde\-expanded\); otherwise a \<slug\> subdirectory under configuration.wallhaven.cache when that's set; otherwise a wallhaven\-cache/\<slug\> subdirectory next to the history file.
 
 <a name="WeatherCachePath"></a>
-## func [WeatherCachePath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L210>)
+## func [WeatherCachePath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L253>)
 
 ```go
 func WeatherCachePath() (string, error)
@@ -179,7 +199,7 @@ func WeatherCachePath() (string, error)
 WeatherCachePath returns the path to the cached weather snapshot, in the same directory as the history file.
 
 <a name="ConfigFileNotFoundError"></a>
-## type [ConfigFileNotFoundError](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L19-L21>)
+## type [ConfigFileNotFoundError](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L20-L22>)
 
 ConfigFileNotFoundError is a custom error for when the config file is not found.
 
@@ -190,7 +210,7 @@ type ConfigFileNotFoundError struct {
 ```
 
 <a name="ConfigFileNotFoundError.Error"></a>
-### func \(ConfigFileNotFoundError\) [Error](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L24>)
+### func \(ConfigFileNotFoundError\) [Error](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L25>)
 
 ```go
 func (e ConfigFileNotFoundError) Error() string
@@ -199,7 +219,7 @@ func (e ConfigFileNotFoundError) Error() string
 Error implements the error interface for ConfigFileNotFoundError
 
 <a name="ViperOptions"></a>
-## type [ViperOptions](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L16>)
+## type [ViperOptions](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L17>)
 
 ViperOptions defines a function type for configuring Viper
 
@@ -208,7 +228,7 @@ type ViperOptions func(*viper.Viper)
 ```
 
 <a name="WithConfigName"></a>
-### func [WithConfigName](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L49>)
+### func [WithConfigName](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L50>)
 
 ```go
 func WithConfigName(name string) ViperOptions
@@ -217,7 +237,7 @@ func WithConfigName(name string) ViperOptions
 WithConfigName sets the name of the config file
 
 <a name="WithConfigPath"></a>
-### func [WithConfigPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L63>)
+### func [WithConfigPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L64>)
 
 ```go
 func WithConfigPath(path string) ViperOptions
@@ -226,7 +246,7 @@ func WithConfigPath(path string) ViperOptions
 WithConfigPath sets the path of the config file
 
 <a name="WithConfigType"></a>
-### func [WithConfigType](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L56>)
+### func [WithConfigType](<https://github.com/lucasassuncao/gopaper/blob/main/internal/config/config.go#L57>)
 
 ```go
 func WithConfigType(configType string) ViperOptions

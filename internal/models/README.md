@@ -16,7 +16,8 @@ import "github.com/lucasassuncao/gopaper/internal/models"
   - [func \(Behavior\) Metadata\(\) map\[string\]\*metadata.Node](<#Behavior.Metadata>)
 - [type Categories](<#Categories>)
   - [func \(Categories\) Metadata\(\) map\[string\]\*metadata.Node](<#Categories.Metadata>)
-  - [func \(c \*Categories\) MultiMonitorOverride\(\) string](<#Categories.MultiMonitorOverride>)
+  - [func \(c \*Categories\) ModeOverride\(\) string](<#Categories.ModeOverride>)
+  - [func \(c \*Categories\) MonitorOverride\(\) string](<#Categories.MonitorOverride>)
   - [func \(c \*Categories\) TransitionOverride\(\) string](<#Categories.TransitionOverride>)
 - [type Condition](<#Condition>)
   - [func \(Condition\) Metadata\(\) map\[string\]\*metadata.Node](<#Condition.Metadata>)
@@ -48,7 +49,7 @@ import "github.com/lucasassuncao/gopaper/internal/models"
 
 
 <a name="AgeFilter"></a>
-## type [AgeFilter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L423-L426>)
+## type [AgeFilter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L439-L442>)
 
 AgeFilter matches a file by how long ago it was last modified.
 
@@ -60,7 +61,7 @@ type AgeFilter struct {
 ```
 
 <a name="AgeFilter.Metadata"></a>
-### func \(AgeFilter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L469>)
+### func \(AgeFilter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L485>)
 
 ```go
 func (AgeFilter) Metadata() map[string]*metadata.Node
@@ -69,19 +70,20 @@ func (AgeFilter) Metadata() map[string]*metadata.Node
 
 
 <a name="Behavior"></a>
-## type [Behavior](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L33-L36>)
+## type [Behavior](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L33-L37>)
 
 Behavior groups how a wallpaper change is applied. At configuration level it sets the run defaults; a category may declare its own behavior block, whose non\-empty fields override the defaults when that category is selected.
 
 ```go
 type Behavior struct {
-    Transition   string `yaml:"transition,omitempty" mapstructure:"transition"`
-    MultiMonitor string `yaml:"multi-monitor,omitempty" mapstructure:"multi-monitor"`
+    Transition string `yaml:"transition,omitempty" mapstructure:"transition"`
+    Monitor    string `yaml:"monitor,omitempty" mapstructure:"monitor"`
+    Mode       string `yaml:"mode,omitempty" mapstructure:"mode"`
 }
 ```
 
 <a name="Behavior.Metadata"></a>
-### func \(Behavior\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L38>)
+### func \(Behavior\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L39>)
 
 ```go
 func (Behavior) Metadata() map[string]*metadata.Node
@@ -90,7 +92,7 @@ func (Behavior) Metadata() map[string]*metadata.Node
 
 
 <a name="Categories"></a>
-## type [Categories](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L307-L317>)
+## type [Categories](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L312-L321>)
 
 
 
@@ -98,7 +100,6 @@ func (Behavior) Metadata() map[string]*metadata.Node
 type Categories struct {
     Name      string           `yaml:"name" mapstructure:"name"`
     Source    string           `yaml:"source,omitempty" mapstructure:"source"`
-    Mode      string           `yaml:"mode" mapstructure:"mode"`
     Enabled   bool             `yaml:"enabled" mapstructure:"enabled"`
     Behavior  *Behavior        `yaml:"behavior,omitempty" mapstructure:"behavior"`
     Monitor   int              `yaml:"monitor,omitempty" mapstructure:"monitor"`
@@ -109,7 +110,7 @@ type Categories struct {
 ```
 
 <a name="Categories.Metadata"></a>
-### func \(Categories\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L262>)
+### func \(Categories\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L273>)
 
 ```go
 func (Categories) Metadata() map[string]*metadata.Node
@@ -117,17 +118,26 @@ func (Categories) Metadata() map[string]*metadata.Node
 
 
 
-<a name="Categories.MultiMonitorOverride"></a>
-### func \(\*Categories\) [MultiMonitorOverride](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L330>)
+<a name="Categories.ModeOverride"></a>
+### func \(\*Categories\) [ModeOverride](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L343>)
 
 ```go
-func (c *Categories) MultiMonitorOverride() string
+func (c *Categories) ModeOverride() string
 ```
 
-MultiMonitorOverride returns this category's multi\-monitor override, or "" when it has none \(the configuration\-level behavior then applies\).
+ModeOverride returns this category's wallpaper mode override, or "" when it has none \(the configuration\-level behavior then applies\).
+
+<a name="Categories.MonitorOverride"></a>
+### func \(\*Categories\) [MonitorOverride](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L334>)
+
+```go
+func (c *Categories) MonitorOverride() string
+```
+
+MonitorOverride returns this category's monitor\-behavior override, or "" when it has none \(the configuration\-level behavior then applies\).
 
 <a name="Categories.TransitionOverride"></a>
-### func \(\*Categories\) [TransitionOverride](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L321>)
+### func \(\*Categories\) [TransitionOverride](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L325>)
 
 ```go
 func (c *Categories) TransitionOverride() string
@@ -136,7 +146,7 @@ func (c *Categories) TransitionOverride() string
 TransitionOverride returns this category's transition override, or "" when it has none \(the configuration\-level behavior then applies\).
 
 <a name="Condition"></a>
-## type [Condition](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L73-L82>)
+## type [Condition](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L84-L93>)
 
 Condition is a named, reusable rule a variant can reference by name instead of declaring hours inline. It holds via exactly one of: hours, date\-range, or the weather bucket \(weather/wind\-speed\-\*/temperature\-\*, which combine with AND\). Priority breaks ties when multiple variants' conditions hold at the same time \(higher wins\); it defaults to 0.
 
@@ -154,7 +164,7 @@ type Condition struct {
 ```
 
 <a name="Condition.Metadata"></a>
-### func \(Condition\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L174>)
+### func \(Condition\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L185>)
 
 ```go
 func (Condition) Metadata() map[string]*metadata.Node
@@ -175,7 +185,7 @@ type Config struct {
 ```
 
 <a name="Config.Metadata"></a>
-### func \(Config\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L109>)
+### func \(Config\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L120>)
 
 ```go
 func (Config) Metadata() map[string]*metadata.Node
@@ -200,7 +210,7 @@ type Configuration struct {
 ```
 
 <a name="Configuration.Metadata"></a>
-### func \(Configuration\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L123>)
+### func \(Configuration\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L134>)
 
 ```go
 func (Configuration) Metadata() map[string]*metadata.Node
@@ -209,7 +219,7 @@ func (Configuration) Metadata() map[string]*metadata.Node
 
 
 <a name="DateRange"></a>
-## type [DateRange](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L88-L91>)
+## type [DateRange](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L99-L102>)
 
 DateRange is an inclusive calendar span \(month/day only, no year\); it wraps into the next year when Start orders after End \(e.g. start "12\-21", end "03\-20" spans New Year's Eve\), the same way Hours wraps past midnight.
 
@@ -221,7 +231,7 @@ type DateRange struct {
 ```
 
 <a name="DateRange.Metadata"></a>
-### func \(DateRange\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L205>)
+### func \(DateRange\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L216>)
 
 ```go
 func (DateRange) Metadata() map[string]*metadata.Node
@@ -230,7 +240,7 @@ func (DateRange) Metadata() map[string]*metadata.Node
 
 
 <a name="Filter"></a>
-## type [Filter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L407-L411>)
+## type [Filter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L423-L427>)
 
 Filter narrows which files in a category's source directory are eligible for selection, beyond the fixed image\-extension check. Match, Age, and Size combine with AND semantics; a nil sub\-filter imposes no constraint.
 
@@ -243,7 +253,7 @@ type Filter struct {
 ```
 
 <a name="Filter.Metadata"></a>
-### func \(Filter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L435>)
+### func \(Filter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L451>)
 
 ```go
 func (Filter) Metadata() map[string]*metadata.Node
@@ -252,7 +262,7 @@ func (Filter) Metadata() map[string]*metadata.Node
 
 
 <a name="Gopaper"></a>
-## type [Gopaper](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L301-L305>)
+## type [Gopaper](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L306-L310>)
 
 
 
@@ -265,7 +275,7 @@ type Gopaper struct {
 ```
 
 <a name="History"></a>
-## type [History](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L103-L107>)
+## type [History](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L114-L118>)
 
 History holds the wallpaper history settings \(used by the prev/next commands\).
 
@@ -278,7 +288,7 @@ type History struct {
 ```
 
 <a name="History.Metadata"></a>
-### func \(History\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L245>)
+### func \(History\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L256>)
 
 ```go
 func (History) Metadata() map[string]*metadata.Node
@@ -287,7 +297,7 @@ func (History) Metadata() map[string]*metadata.Node
 
 
 <a name="Logging"></a>
-## type [Logging](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L94-L99>)
+## type [Logging](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L105-L110>)
 
 Logging holds the log output settings.
 
@@ -301,7 +311,7 @@ type Logging struct {
 ```
 
 <a name="Logging.Metadata"></a>
-### func \(Logging\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L220>)
+### func \(Logging\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L231>)
 
 ```go
 func (Logging) Metadata() map[string]*metadata.Node
@@ -310,7 +320,7 @@ func (Logging) Metadata() map[string]*metadata.Node
 
 
 <a name="MatchFilter"></a>
-## type [MatchFilter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L415-L420>)
+## type [MatchFilter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L431-L436>)
 
 MatchFilter matches a file by its name. Literal, Regex, and Glob are mutually exclusive.
 
@@ -324,7 +334,7 @@ type MatchFilter struct {
 ```
 
 <a name="MatchFilter.Metadata"></a>
-### func \(MatchFilter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L449>)
+### func \(MatchFilter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L465>)
 
 ```go
 func (MatchFilter) Metadata() map[string]*metadata.Node
@@ -333,7 +343,7 @@ func (MatchFilter) Metadata() map[string]*metadata.Node
 
 
 <a name="SizeFilter"></a>
-## type [SizeFilter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L430-L433>)
+## type [SizeFilter](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L446-L449>)
 
 SizeFilter matches a file by its size in bytes. Min/Max accept human\-readable strings such as "10MB" or "1.5GiB".
 
@@ -345,7 +355,7 @@ type SizeFilter struct {
 ```
 
 <a name="SizeFilter.Metadata"></a>
-### func \(SizeFilter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L482>)
+### func \(SizeFilter\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L498>)
 
 ```go
 func (SizeFilter) Metadata() map[string]*metadata.Node
@@ -354,7 +364,7 @@ func (SizeFilter) Metadata() map[string]*metadata.Node
 
 
 <a name="Variant"></a>
-## type [Variant](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L383-L387>)
+## type [Variant](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L399-L403>)
 
 Variant is one conditioned rendition of a category's image collection \(macOS dynamic wallpaper style\). Among variants whose condition currently holds, the one with the highest priority provides the category's source.
 
@@ -367,7 +377,7 @@ type Variant struct {
 ```
 
 <a name="Variant.Metadata"></a>
-### func \(Variant\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L389>)
+### func \(Variant\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L405>)
 
 ```go
 func (Variant) Metadata() map[string]*metadata.Node
@@ -376,18 +386,19 @@ func (Variant) Metadata() map[string]*metadata.Node
 
 
 <a name="WallhavenConfig"></a>
-## type [WallhavenConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L55-L57>)
+## type [WallhavenConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L65-L68>)
 
 WallhavenConfig holds the global Wallhaven API settings shared by every wallhaven\-sourced category.
 
 ```go
 type WallhavenConfig struct {
     APIKey string `yaml:"api-key,omitempty" mapstructure:"api-key"`
+    Cache  string `yaml:"cache,omitempty" mapstructure:"cache"`
 }
 ```
 
 <a name="WallhavenConfig.Metadata"></a>
-### func \(WallhavenConfig\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L348>)
+### func \(WallhavenConfig\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L361>)
 
 ```go
 func (WallhavenConfig) Metadata() map[string]*metadata.Node
@@ -396,7 +407,7 @@ func (WallhavenConfig) Metadata() map[string]*metadata.Node
 
 
 <a name="WallhavenSource"></a>
-## type [WallhavenSource](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L341-L346>)
+## type [WallhavenSource](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L354-L359>)
 
 WallhavenSource makes a category draw its images from the Wallhaven API instead of a local directory. Downloaded images are kept in a local cache directory, which acts as the category's source for selection and offline runs. Mutually exclusive with Source/Variants.
 
@@ -410,7 +421,7 @@ type WallhavenSource struct {
 ```
 
 <a name="WallhavenSource.Metadata"></a>
-### func \(WallhavenSource\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L356>)
+### func \(WallhavenSource\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L372>)
 
 ```go
 func (WallhavenSource) Metadata() map[string]*metadata.Node
@@ -419,7 +430,7 @@ func (WallhavenSource) Metadata() map[string]*metadata.Node
 
 
 <a name="WeatherConfig"></a>
-## type [WeatherConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L61-L66>)
+## type [WeatherConfig](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L72-L77>)
 
 WeatherConfig configures the weather data source used by weather\-based conditions.
 
@@ -433,7 +444,7 @@ type WeatherConfig struct {
 ```
 
 <a name="WeatherConfig.Metadata"></a>
-### func \(WeatherConfig\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L147>)
+### func \(WeatherConfig\) [Metadata](<https://github.com/lucasassuncao/gopaper/blob/main/internal/models/gopaper.go#L158>)
 
 ```go
 func (WeatherConfig) Metadata() map[string]*metadata.Node

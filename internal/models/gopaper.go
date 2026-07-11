@@ -31,8 +31,9 @@ type Configuration struct {
 // whose non-empty fields override the defaults when that category is
 // selected.
 type Behavior struct {
-	Transition   string `yaml:"transition,omitempty" mapstructure:"transition"`
-	MultiMonitor string `yaml:"multi-monitor,omitempty" mapstructure:"multi-monitor"`
+	Transition string `yaml:"transition,omitempty" mapstructure:"transition"`
+	Monitor    string `yaml:"monitor,omitempty" mapstructure:"monitor"`
+	Mode       string `yaml:"mode,omitempty" mapstructure:"mode"`
 }
 
 func (Behavior) Metadata() map[string]*metadata.Node {
@@ -42,10 +43,19 @@ func (Behavior) Metadata() map[string]*metadata.Node {
 			OneOf:       []string{"fade", "none"},
 			Default:     "fade",
 		}},
-		"multi-monitor": {FieldMeta: editor.FieldMeta{
-			Description: "How wallpapers are applied on multi-monitor setups. \"same\" mirrors one image on every monitor (fade works); \"per-monitor\" gives each monitor its own image (always instant). On a category, this decides what happens when that category wins the draw.",
-			OneOf:       []string{"same", "per-monitor"},
-			Default:     "same",
+		"monitor": {FieldMeta: editor.FieldMeta{
+			Description: "How wallpapers are applied on multi-monitor setups. \"all\" mirrors one image " +
+				"on every monitor (fade works); \"per-monitor\" gives each monitor its own image (always " +
+				"instant); \"monitor1\", \"monitor2\", etc. pin this category to one specific monitor, " +
+				"leaving the others untouched (always instant). On a category, this decides what happens " +
+				"when that category wins the draw.",
+			Pattern: `^(all|per-monitor|monitor[1-9][0-9]*)$`,
+			Default: "all",
+		}},
+		"mode": {FieldMeta: editor.FieldMeta{
+			Description: "Default wallpaper display mode. On a category, this overrides the configuration-level default when that category is selected.",
+			OneOf:       []string{"crop", "tile", "stretch", "span", "fit", "center"},
+			Default:     "crop",
 		}},
 	}
 }
@@ -54,6 +64,7 @@ func (Behavior) Metadata() map[string]*metadata.Node {
 // wallhaven-sourced category.
 type WallhavenConfig struct {
 	APIKey string `yaml:"api-key,omitempty" mapstructure:"api-key"`
+	Cache  string `yaml:"cache,omitempty" mapstructure:"cache"`
 }
 
 // WeatherConfig configures the weather data source used by
@@ -272,12 +283,6 @@ func (Categories) Metadata() map[string]*metadata.Node {
 		"variants": {FieldMeta: editor.FieldMeta{
 			Description: "Time-conditioned renditions of this category (e.g. day/night). The first variant whose hours window contains the current time provides the source; if none matches, the category is skipped for that run. Mutually exclusive with source.",
 		}},
-		"mode": {FieldMeta: editor.FieldMeta{
-			Description: "Wallpaper display mode applied when an image from this category is selected.",
-			Required:    true,
-			OneOf:       []string{"crop", "tile", "stretch", "span", "fit", "center"},
-			Default:     "crop",
-		}},
 		"enabled": {FieldMeta: editor.FieldMeta{
 			Description: "Whether this category is eligible for random selection.",
 			Default:     "true",
@@ -307,7 +312,6 @@ type Gopaper struct {
 type Categories struct {
 	Name      string           `yaml:"name" mapstructure:"name"`
 	Source    string           `yaml:"source,omitempty" mapstructure:"source"`
-	Mode      string           `yaml:"mode" mapstructure:"mode"`
 	Enabled   bool             `yaml:"enabled" mapstructure:"enabled"`
 	Behavior  *Behavior        `yaml:"behavior,omitempty" mapstructure:"behavior"`
 	Monitor   int              `yaml:"monitor,omitempty" mapstructure:"monitor"`
@@ -325,13 +329,22 @@ func (c *Categories) TransitionOverride() string {
 	return c.Behavior.Transition
 }
 
-// MultiMonitorOverride returns this category's multi-monitor override, or
-// "" when it has none (the configuration-level behavior then applies).
-func (c *Categories) MultiMonitorOverride() string {
+// MonitorOverride returns this category's monitor-behavior override, or ""
+// when it has none (the configuration-level behavior then applies).
+func (c *Categories) MonitorOverride() string {
 	if c == nil || c.Behavior == nil {
 		return ""
 	}
-	return c.Behavior.MultiMonitor
+	return c.Behavior.Monitor
+}
+
+// ModeOverride returns this category's wallpaper mode override, or "" when
+// it has none (the configuration-level behavior then applies).
+func (c *Categories) ModeOverride() string {
+	if c == nil || c.Behavior == nil {
+		return ""
+	}
+	return c.Behavior.Mode
 }
 
 // WallhavenSource makes a category draw its images from the Wallhaven API
@@ -349,6 +362,9 @@ func (WallhavenConfig) Metadata() map[string]*metadata.Node {
 	return map[string]*metadata.Node{
 		"api-key": {FieldMeta: editor.FieldMeta{
 			Description: "Wallhaven API key. Optional: without it searches run anonymously and only sfw purity is allowed; sketchy/nsfw require a key.",
+		}},
+		"cache": {FieldMeta: editor.FieldMeta{
+			Description: "Base directory for every wallhaven category's cache, each in its own <name> subdirectory. A category's own wallhaven.cache overrides this. Defaults to a wallhaven-cache subdirectory next to the history file.",
 		}},
 	}
 }

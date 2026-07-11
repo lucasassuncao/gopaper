@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/lucasassuncao/gopaper/internal/history"
@@ -105,24 +106,62 @@ func TransitionEnabledForCategory(v *viper.Viper, categoryTransition string) boo
 	return t != "none"
 }
 
-// MultiMonitorMode returns the configured default multi-monitor behavior:
-// "per-monitor" when explicitly set, otherwise "same".
-func MultiMonitorMode(v *viper.Viper) string {
-	if v.GetString("configuration.behavior.multi-monitor") == "per-monitor" {
-		return "per-monitor"
+// MonitorMode returns the configured default monitor behavior: "per-monitor",
+// "monitorN" (pinned to a single 1-based monitor index), or "all" (the
+// default, one image mirrored on every monitor).
+func MonitorMode(v *viper.Viper) string {
+	if m := v.GetString("configuration.behavior.monitor"); isMonitorMode(m) {
+		return m
 	}
-	return "same"
+	return "all"
 }
 
-// MultiMonitorModeForCategory resolves the effective multi-monitor mode for
-// a category: its own behavior.multi-monitor when set, otherwise the
-// configuration-level default.
-func MultiMonitorModeForCategory(v *viper.Viper, categoryMode string) string {
-	switch categoryMode {
-	case "same", "per-monitor":
+// MonitorModeForCategory resolves the effective monitor mode for a category:
+// its own behavior.monitor when set, otherwise the configuration-level
+// default.
+func MonitorModeForCategory(v *viper.Viper, categoryMode string) string {
+	if isMonitorMode(categoryMode) {
 		return categoryMode
 	}
-	return MultiMonitorMode(v)
+	return MonitorMode(v)
+}
+
+// isMonitorMode reports whether m is a recognized monitor mode: "all",
+// "per-monitor", or a "monitorN" pin.
+func isMonitorMode(m string) bool {
+	if m == "all" || m == "per-monitor" {
+		return true
+	}
+	_, ok := ParseMonitorMode(m)
+	return ok
+}
+
+// ParseMonitorMode reports whether mode pins a category to a single 1-based
+// monitor index (e.g. "monitor1" -> 1, true), as opposed to "all" or
+// "per-monitor".
+func ParseMonitorMode(mode string) (int, bool) {
+	n, ok := strings.CutPrefix(mode, "monitor")
+	if !ok || n == "" {
+		return 0, false
+	}
+	idx, err := strconv.Atoi(n)
+	if err != nil || idx < 1 {
+		return 0, false
+	}
+	return idx, true
+}
+
+// ModeForCategory resolves the effective wallpaper mode for a category: its
+// own behavior.mode when set, otherwise the configuration-level default
+// (configuration.behavior.mode, "crop" when that's unset too).
+func ModeForCategory(v *viper.Viper, categoryMode string) string {
+	if categoryMode != "" {
+		return categoryMode
+	}
+	if m := v.GetString("configuration.behavior.mode"); m != "" {
+		return m
+	}
+	return "crop"
 }
 
 // LoadWallhavenAPIKey returns configuration.wallhaven.api-key, or "" when unset.
@@ -131,11 +170,15 @@ func LoadWallhavenAPIKey(v *viper.Viper) string {
 }
 
 // WallhavenCacheDir resolves a category's Wallhaven cache directory: the
-// category's own cache override when set (tilde-expanded), otherwise a
-// wallhaven-cache/<slug> subdirectory next to the history file.
+// category's own cache override when set (tilde-expanded); otherwise a
+// <slug> subdirectory under configuration.wallhaven.cache when that's set;
+// otherwise a wallhaven-cache/<slug> subdirectory next to the history file.
 func WallhavenCacheDir(v *viper.Viper, categoryName, override string) (string, error) {
 	if override != "" {
 		return ExpandTilde(override), nil
+	}
+	if base := v.GetString("configuration.wallhaven.cache"); base != "" {
+		return filepath.Join(ExpandTilde(base), slugify(categoryName)), nil
 	}
 	histPath, err := HistoryPath(v)
 	if err != nil {

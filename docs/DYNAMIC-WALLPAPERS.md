@@ -13,7 +13,6 @@ Replace a category's single `source` with a `variants` list. Each variant provid
 ```yaml
 categories:
   - name: "Saltern Study"
-    mode: "crop"
     enabled: true
     variants:
       - source: "C:\\Walls\\Saltern Study"
@@ -29,8 +28,8 @@ pool entirely, which is the same "enabled categories not found" case as an all-d
 config).
 
 `hours` uses a 24h `"HH:MM-HH:MM"` window, both ends inclusive, and wraps past midnight —
-`"18:00-05:59"` above means 6pm through 5:59am. `mode`, `enabled`, and `filter` stay at the
-category level and apply no matter which variant is picked.
+`"18:00-05:59"` above means 6pm through 5:59am. `behavior`, `enabled`, and `filter` stay at
+the category level and apply no matter which variant is picked.
 
 ## Relative paths and a shared base directory
 
@@ -41,7 +40,6 @@ base directory and use relative variant paths:
 categories:
   - name: "Saltern Study"
     source: "C:\\Walls\\DynamicWallpapers\\Saltern Study"   # base directory
-    mode: "crop"
     enabled: true
     variants:
       - { source: "./day", hours: "06:00-17:59" }
@@ -225,12 +223,10 @@ configuration:
 categories:
   - name: "Custom Selection"                # a plain category needs none of this
     source: "C:\\Walls\\CustomSelection"
-    mode: crop
     enabled: true
 
   - name: "Saltern Study"                   # day/night, by hours
     source: "C:\\Walls\\DynamicWallpapers\\Saltern Study"
-    mode: crop
     enabled: true
     variants:
       - { source: "./day", condition: morning }
@@ -238,7 +234,6 @@ categories:
 
   - name: "Seasonal Pack"                   # summer/winter, by date
     source: "C:\\Walls\\DynamicWallpapers\\Seasonal"
-    mode: crop
     enabled: true
     variants:
       - { source: "./summer", condition: summer }
@@ -246,14 +241,12 @@ categories:
 
   - name: "Holidays"                        # fixed date, high priority
     source: "C:\\Walls\\DynamicWallpapers\\Holidays"
-    mode: crop
     enabled: true
     variants:
       - { source: "./christmas", condition: christmas }
 
   - name: "Weather Reactive"                # live weather, priority chain
     source: "C:\\Walls\\DynamicWallpapers\\Weather"
-    mode: crop
     enabled: true
     variants:
       - { source: "./default", condition: afternoon }

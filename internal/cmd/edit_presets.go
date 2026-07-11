@@ -80,7 +80,6 @@ func docPresetsMap() map[string]*models.Config {
 				{
 					Name:    "Custom Selection",
 					Source:  filepath.Join(walls, "CustomSelection"),
-					Mode:    "crop",
 					Enabled: true,
 				},
 			},
@@ -94,20 +93,19 @@ func docPresetsMap() map[string]*models.Config {
 				{
 					Name:    "Wallhaven",
 					Source:  filepath.Join(walls, "Wallhaven"),
-					Mode:    "crop",
 					Enabled: true,
 				},
 				{
-					Name:    "Nature",
-					Source:  filepath.Join(walls, "Nature"),
-					Mode:    "fit",
-					Enabled: false,
+					Name:     "Nature",
+					Source:   filepath.Join(walls, "Nature"),
+					Behavior: &models.Behavior{Mode: "fit"},
+					Enabled:  false,
 				},
 				{
-					Name:    "Minimal",
-					Source:  filepath.Join(walls, "Minimal"),
-					Mode:    "center",
-					Enabled: false,
+					Name:     "Minimal",
+					Source:   filepath.Join(walls, "Minimal"),
+					Behavior: &models.Behavior{Mode: "center"},
+					Enabled:  false,
 				},
 			},
 		},
@@ -120,7 +118,6 @@ func docPresetsMap() map[string]*models.Config {
 				{
 					Name:    "Custom Selection",
 					Source:  filepath.Join(walls, "CustomSelection"),
-					Mode:    "crop",
 					Enabled: true,
 				},
 			},
@@ -134,7 +131,6 @@ func docPresetsMap() map[string]*models.Config {
 				{
 					Name:    "Custom Selection",
 					Source:  filepath.Join(walls, "CustomSelection"),
-					Mode:    "crop",
 					Enabled: true,
 				},
 			},
@@ -149,7 +145,6 @@ func docPresetsMap() map[string]*models.Config {
 				{
 					Name:    "Custom Selection",
 					Source:  filepath.Join(walls, "CustomSelection"),
-					Mode:    "crop",
 					Enabled: true,
 				},
 			},
@@ -193,10 +188,10 @@ func categoriesPresetsMap() map[string][]models.Categories {
 
 	mode := func(name, source, m string) models.Categories {
 		return models.Categories{
-			Name:    name,
-			Source:  source,
-			Mode:    m,
-			Enabled: true,
+			Name:     name,
+			Source:   source,
+			Behavior: &models.Behavior{Mode: m},
+			Enabled:  true,
 		}
 	}
 
@@ -228,11 +223,11 @@ func categoriesPresetsMap() map[string][]models.Categories {
 		// filter.match.glob: only files whose name matches a wildcard pattern
 		"with-filter-match-glob": {
 			{
-				Name:    "Screenshots",
-				Source:  filepath.Join(walls, "Screenshots"),
-				Mode:    "fit",
-				Enabled: true,
-				Filter:  &models.Filter{Match: &models.MatchFilter{Glob: "screenshot_*"}},
+				Name:     "Screenshots",
+				Source:   filepath.Join(walls, "Screenshots"),
+				Behavior: &models.Behavior{Mode: "fit"},
+				Enabled:  true,
+				Filter:   &models.Filter{Match: &models.MatchFilter{Glob: "screenshot_*"}},
 			},
 		},
 		// filter.match.regex: only files whose name matches an RE2 pattern
@@ -240,7 +235,6 @@ func categoriesPresetsMap() map[string][]models.Categories {
 			{
 				Name:    "Dated",
 				Source:  filepath.Join(walls, "Dated"),
-				Mode:    "crop",
 				Enabled: true,
 				Filter:  &models.Filter{Match: &models.MatchFilter{Regex: `^\d{4}-\d{2}-\d{2}_`}},
 			},
@@ -250,7 +244,6 @@ func categoriesPresetsMap() map[string][]models.Categories {
 			{
 				Name:    "Recent",
 				Source:  filepath.Join(walls, "Recent"),
-				Mode:    "crop",
 				Enabled: true,
 				Filter:  &models.Filter{Age: &models.AgeFilter{Max: 30 * 24 * time.Hour}},
 			},
@@ -260,7 +253,6 @@ func categoriesPresetsMap() map[string][]models.Categories {
 			{
 				Name:    "HighRes",
 				Source:  filepath.Join(walls, "HighRes"),
-				Mode:    "crop",
 				Enabled: true,
 				Filter:  &models.Filter{Size: &models.SizeFilter{Min: "2MB"}},
 			},

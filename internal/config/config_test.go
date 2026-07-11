@@ -34,38 +34,38 @@ func TestTransitionEnabledForCategory(t *testing.T) {
 	}
 }
 
-func TestMultiMonitorMode(t *testing.T) {
+func TestMonitorMode(t *testing.T) {
 	v := viper.New()
-	if got := MultiMonitorMode(v); got != "same" {
-		t.Errorf("default: got %q, want same", got)
+	if got := MonitorMode(v); got != "all" {
+		t.Errorf("default: got %q, want all", got)
 	}
-	v.Set("configuration.behavior.multi-monitor", "per-monitor")
-	if got := MultiMonitorMode(v); got != "per-monitor" {
+	v.Set("configuration.behavior.monitor", "per-monitor")
+	if got := MonitorMode(v); got != "per-monitor" {
 		t.Errorf("explicit: got %q, want per-monitor", got)
 	}
-	v.Set("configuration.behavior.multi-monitor", "banana")
-	if got := MultiMonitorMode(v); got != "same" {
-		t.Errorf("unknown value: got %q, want same", got)
+	v.Set("configuration.behavior.monitor", "banana")
+	if got := MonitorMode(v); got != "all" {
+		t.Errorf("unknown value: got %q, want all", got)
 	}
 }
 
-func TestMultiMonitorModeForCategory(t *testing.T) {
+func TestMonitorModeForCategory(t *testing.T) {
 	v := viper.New()
-	v.Set("configuration.behavior.multi-monitor", "per-monitor")
+	v.Set("configuration.behavior.monitor", "per-monitor")
 
-	if got := MultiMonitorModeForCategory(v, ""); got != "per-monitor" {
+	if got := MonitorModeForCategory(v, ""); got != "per-monitor" {
 		t.Errorf("no override: got %q, want the global per-monitor", got)
 	}
-	if got := MultiMonitorModeForCategory(v, "same"); got != "same" {
-		t.Errorf("category same: got %q, want same", got)
+	if got := MonitorModeForCategory(v, "all"); got != "all" {
+		t.Errorf("category all: got %q, want all", got)
 	}
 
-	v2 := viper.New() // global default (same)
-	if got := MultiMonitorModeForCategory(v2, "per-monitor"); got != "per-monitor" {
+	v2 := viper.New() // global default (all)
+	if got := MonitorModeForCategory(v2, "per-monitor"); got != "per-monitor" {
 		t.Errorf("category per-monitor over default: got %q, want per-monitor", got)
 	}
-	if got := MultiMonitorModeForCategory(v2, ""); got != "same" {
-		t.Errorf("all defaults: got %q, want same", got)
+	if got := MonitorModeForCategory(v2, ""); got != "all" {
+		t.Errorf("all defaults: got %q, want all", got)
 	}
 }
 

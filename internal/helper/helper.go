@@ -72,7 +72,10 @@ func GetRandomCategory(categories []*models.Categories) *models.Categories {
 // GetRandomFile returns a random image file from the list of entries.
 // Directories and files with unsupported extensions are excluded. filter may
 // be nil to impose no additional constraint beyond the extension check.
-func GetRandomFile(files []os.DirEntry, filter *filters.Compiled) (string, error) {
+// exclude, when non-empty, is skipped as long as at least one other
+// candidate remains — used to avoid picking the same file as the current
+// wallpaper again.
+func GetRandomFile(files []os.DirEntry, filter *filters.Compiled, exclude string) (string, error) {
 	imageFiles := make([]os.DirEntry, 0, len(files))
 	for _, f := range files {
 		if f.IsDir() {
@@ -100,6 +103,16 @@ func GetRandomFile(files []os.DirEntry, filter *filters.Compiled) (string, error
 
 	if len(imageFiles) == 0 {
 		return "", fmt.Errorf("no supported image files found in the directory (.jpg, .jpeg, .png, .webp) matching the configured filter")
+	}
+
+	if exclude != "" && len(imageFiles) > 1 {
+		filtered := imageFiles[:0]
+		for _, f := range imageFiles {
+			if f.Name() != exclude {
+				filtered = append(filtered, f)
+			}
+		}
+		imageFiles = filtered
 	}
 
 	randomIndex := rand.Intn(len(imageFiles)) // #nosec G404 -- non-security random selection
@@ -272,6 +285,65 @@ type MonitorTarget struct {
 // unavailable; callers should fall back to the single-wallpaper flow.
 func ListMonitors() ([]string, error) {
 	return monitorDevicePaths()
+}
+
+// MonitorDetail describes one connected monitor for the `gopaper monitors`
+// command: its 1-based index (as used in configuration.behavior.monitor /
+// categories[].monitor), device path, desktop-coordinate bounding rectangle
+// as arranged in Windows Display Settings (left/top is the top-left corner;
+// the primary monitor sits at 0,0), and its EDID-reported name when that
+// could be resolved ("" otherwise).
+type MonitorDetail struct {
+	Index                    int
+	DevicePath               string
+	Left, Top, Right, Bottom int
+	Name                     string
+}
+
+// ListMonitorDetails returns MonitorDetail for every connected monitor, in
+// the same order as ListMonitors. It errors on non-Windows platforms and
+// when the enumeration API is unavailable.
+//
+// Name is resolved best-effort from the monitor's EDID data (via WMI) and
+// left empty if that lookup fails or a given monitor can't be matched — a
+// missing name never fails the call, since position/device path alone are
+// already useful.
+func ListMonitorDetails() ([]MonitorDetail, error) {
+	details, err := monitorDetails()
+	if err != nil {
+		return nil, err
+	}
+
+	names, err := monitorNames()
+	if err != nil {
+		return details, nil
+	}
+	for i := range details {
+		details[i].Name = matchMonitorName(details[i].DevicePath, names)
+	}
+	return details, nil
+}
+
+// matchMonitorName finds the EDID name for devicePath among names, a map
+// keyed by WMI's PNP instance path (e.g. "DISPLAY\AUS32E0\5&19f84e22&1&UID4354").
+// IDesktopWallpaper's device path for the same monitor
+// ("\\?\DISPLAY#AUS32E0#5&19f84e22&1&UID4354#{guid}") encodes the identical
+// PnP hardware ID and instance ID, just '#'-delimited and GUID-suffixed
+// instead of '\'-delimited — both are views of the same PnP Device Instance
+// ID, so a prefix match on the normalized form is exact, not a guess.
+func matchMonitorName(devicePath string, names map[string]string) string {
+	trimmed := strings.TrimPrefix(devicePath, `\\?\`)
+	parts := strings.Split(trimmed, "#")
+	if len(parts) < 3 {
+		return ""
+	}
+	key := strings.ToUpper(parts[0] + `\` + parts[1] + `\` + parts[2])
+	for instance, name := range names {
+		if strings.HasPrefix(strings.ToUpper(instance), key) {
+			return name
+		}
+	}
+	return ""
 }
 
 // SetWallpapersPerMonitor applies each target's Path to its DevicePath.

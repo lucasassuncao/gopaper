@@ -130,6 +130,40 @@ gopaper history --category "Saltern Study"
 
 ---
 
+## `gopaper monitors`
+
+Lists every connected monitor with the 1-based index gopaper uses in `configuration.behavior.monitor` (`monitor1`, `monitor2`, ...) and `categories[].monitor` — see [`behavior.monitor`](CONFIGURATION.md#behaviormonitor) for how those fields decide which screen a category lands on.
+
+```pwsh
+gopaper monitors
+```
+
+```
+Index    | Name          | Position  | Size      | Device Path
+monitor1 | BOE           | -1920,621 | 1920x1080 | \\?\DISPLAY#BOE07B6#4&3855a8a0&0&UID265988#{...}
+monitor2 | ASUS VG32VQ1B | 0,0       | 2560x1440 | \\?\DISPLAY#AUS32E0#5&19f84e22&1&UID4354#{...}
+```
+
+No flags. Use this before writing a `monitor1`/`monitor2` pin so you know which physical
+screen each index refers to:
+
+- **Name** is the monitor's EDID-reported name (e.g. `ASUS VG32VQ1B`), read via WMI. Falls
+  back to the 3-letter manufacturer PNP code (e.g. `BOE`) when the panel's EDID doesn't set a
+  friendly name — common for laptop panels, which is also a hint by itself: a `BOE`/`AUO`/
+  `CMN`/`LGD`-style 3-letter code with no product name usually is the built-in laptop screen.
+- **Position/Size** is each monitor's desktop rectangle, same arrangement as Windows Display
+  Settings — the monitor at `0,0` is the reference point; others are offset from it (e.g. a
+  monitor at `1920,0` sits to its right, one at negative X sits to its left). Size tells you
+  the resolution, which combined with Name is usually enough to tell two monitors apart even
+  without recognizing the EDID name.
+- **monitor1**, **monitor2**, etc. in this table's Index column are exactly the values
+  `behavior.monitor: monitorN` and `categories[].monitor: N` expect.
+
+Both Name and Position/Size are best-effort: on a WMI query failure, Name is blank (`-`) but
+the rest of the table still renders normally.
+
+---
+
 ## `gopaper self-update`
 
 Downloads a release from GitHub and replaces the running binary. The old binary is kept as `gopaper.old` until the next run, and the downloaded binary's checksum is verified against the release's published manifest when one exists.

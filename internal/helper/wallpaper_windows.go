@@ -43,6 +43,7 @@ const (
 	idwGetWallpaper              = 4
 	idwGetMonitorDevicePathAt    = 5
 	idwGetMonitorDevicePathCount = 6
+	idwGetMonitorRECT            = 7
 	idwSetPosition               = 10
 	idwSetSlideshow              = 12
 	idwSetSlideshowOptions       = 14
@@ -336,6 +337,57 @@ func monitorDevicePaths() ([]string, error) {
 		paths = append(paths, utf16PtrToStringAndFree(id))
 	}
 	return paths, nil
+}
+
+// rect mirrors the binary layout of the Win32 RECT struct.
+type rect struct {
+	Left, Top, Right, Bottom int32
+}
+
+// monitorDetails returns each monitor's 1-based index (index 0 is "monitor
+// 1" in the configuration), device path, and desktop-coordinate bounding
+// rectangle (as arranged in Windows Display Settings) — for the `gopaper
+// monitors` command, so users can tell which physical monitor a given
+// index refers to.
+func monitorDetails() ([]MonitorDetail, error) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	dw, err := newDesktopWallpaper()
+	if err != nil {
+		return nil, err
+	}
+	defer closeDesktopWallpaper(dw)
+
+	var count uint32
+	if err := vtblCall(dw, idwGetMonitorDevicePathCount, uintptr(unsafe.Pointer(&count))); err != nil {
+		return nil, err
+	}
+
+	details := make([]MonitorDetail, 0, count)
+	for i := uint32(0); i < count; i++ {
+		var id *uint16
+		if err := vtblCall(dw, idwGetMonitorDevicePathAt, uintptr(i), uintptr(unsafe.Pointer(&id))); err != nil {
+			return nil, err
+		}
+
+		var r rect
+		rErr := vtblCall(dw, idwGetMonitorRECT, uintptr(unsafe.Pointer(id)), uintptr(unsafe.Pointer(&r)))
+		devicePath := utf16PtrToStringAndFree(id) // also frees id
+		if rErr != nil {
+			return nil, rErr
+		}
+
+		details = append(details, MonitorDetail{
+			Index:      int(i) + 1,
+			DevicePath: devicePath,
+			Left:       int(r.Left),
+			Top:        int(r.Top),
+			Right:      int(r.Right),
+			Bottom:     int(r.Bottom),
+		})
+	}
+	return details, nil
 }
 
 // setWallpaperOnMonitor applies fullPath to the monitor identified by

@@ -14,7 +14,7 @@ import "github.com/lucasassuncao/gopaper/internal/helper"
 - [func GetEnabledCategories\(categories \[\]\*models.Categories\) \[\]\*models.Categories](<#GetEnabledCategories>)
 - [func GetPreviousWallpaper\(\) \(string, error\)](<#GetPreviousWallpaper>)
 - [func GetRandomCategory\(categories \[\]\*models.Categories\) \*models.Categories](<#GetRandomCategory>)
-- [func GetRandomFile\(files \[\]os.DirEntry, filter \*filters.Compiled\) \(string, error\)](<#GetRandomFile>)
+- [func GetRandomFile\(files \[\]os.DirEntry, filter \*filters.Compiled, exclude string\) \(string, error\)](<#GetRandomFile>)
 - [func ListMonitors\(\) \(\[\]string, error\)](<#ListMonitors>)
 - [func ReadDirectory\(path string\) \(\[\]os.DirEntry, error\)](<#ReadDirectory>)
 - [func ResolveSource\(cat \*models.Categories, now time.Time, ws \*weather.Snapshot, conditions map\[string\]models.Condition, wallhavenDir string\) \(string, bool\)](<#ResolveSource>)
@@ -22,6 +22,8 @@ import "github.com/lucasassuncao/gopaper/internal/helper"
 - [func SetWallpaperFromPath\(fullPath string, fade bool\) error](<#SetWallpaperFromPath>)
 - [func SetWallpaperMode\(mode string\) error](<#SetWallpaperMode>)
 - [func SetWallpapersPerMonitor\(targets \[\]MonitorTarget\) error](<#SetWallpapersPerMonitor>)
+- [type MonitorDetail](<#MonitorDetail>)
+  - [func ListMonitorDetails\(\) \(\[\]MonitorDetail, error\)](<#ListMonitorDetails>)
 - [type MonitorTarget](<#MonitorTarget>)
 
 
@@ -44,7 +46,7 @@ func GetEnabledCategories(categories []*models.Categories) []*models.Categories
 GetEnabledCategories returns a list of enabled categories from the list of categories.
 
 <a name="GetPreviousWallpaper"></a>
-## func [GetPreviousWallpaper](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L292>)
+## func [GetPreviousWallpaper](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L364>)
 
 ```go
 func GetPreviousWallpaper() (string, error)
@@ -62,16 +64,16 @@ func GetRandomCategory(categories []*models.Categories) *models.Categories
 GetRandomCategory returns a random category from the list of categories.
 
 <a name="GetRandomFile"></a>
-## func [GetRandomFile](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L75>)
+## func [GetRandomFile](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L78>)
 
 ```go
-func GetRandomFile(files []os.DirEntry, filter *filters.Compiled) (string, error)
+func GetRandomFile(files []os.DirEntry, filter *filters.Compiled, exclude string) (string, error)
 ```
 
-GetRandomFile returns a random image file from the list of entries. Directories and files with unsupported extensions are excluded. filter may be nil to impose no additional constraint beyond the extension check.
+GetRandomFile returns a random image file from the list of entries. Directories and files with unsupported extensions are excluded. filter may be nil to impose no additional constraint beyond the extension check. exclude, when non\-empty, is skipped as long as at least one other candidate remains — used to avoid picking the same file as the current wallpaper again.
 
 <a name="ListMonitors"></a>
-## func [ListMonitors](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L273>)
+## func [ListMonitors](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L286>)
 
 ```go
 func ListMonitors() ([]string, error)
@@ -89,7 +91,7 @@ func ReadDirectory(path string) ([]os.DirEntry, error)
 ReadDirectory reads the contents of a given directory and returns the files.
 
 <a name="ResolveSource"></a>
-## func [ResolveSource](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L123>)
+## func [ResolveSource](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L136>)
 
 ```go
 func ResolveSource(cat *models.Categories, now time.Time, ws *weather.Snapshot, conditions map[string]models.Condition, wallhavenDir string) (string, bool)
@@ -100,7 +102,7 @@ ResolveSource returns the source directory a category should use at time now, gi
 For a category with variants, every variant whose condition currently holds is a candidate; the candidate with the highest priority wins \(ties broken by position in the variants list\). A variant's priority comes from its named condition's priority \(0 if unset\); a variant using inline hours has priority 0. ok is false when no variant's condition holds, meaning the category is ineligible for this run.
 
 <a name="SetWallpaperFromFile"></a>
-## func [SetWallpaperFromFile](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L243>)
+## func [SetWallpaperFromFile](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L256>)
 
 ```go
 func SetWallpaperFromFile(source, file string, fade bool) error
@@ -109,7 +111,7 @@ func SetWallpaperFromFile(source, file string, fade bool) error
 SetWallpaperFromFile sets the wallpaper from the specified file.
 
 <a name="SetWallpaperFromPath"></a>
-## func [SetWallpaperFromPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L250>)
+## func [SetWallpaperFromPath](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L263>)
 
 ```go
 func SetWallpaperFromPath(fullPath string, fade bool) error
@@ -118,7 +120,7 @@ func SetWallpaperFromPath(fullPath string, fade bool) error
 SetWallpaperFromPath sets the wallpaper from a pre\-built absolute path. When fade is true it tries the native Windows crossfade transition first, falling back to the instant swap if the fade path fails for any reason.
 
 <a name="SetWallpaperMode"></a>
-## func [SetWallpaperMode](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L301>)
+## func [SetWallpaperMode](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L373>)
 
 ```go
 func SetWallpaperMode(mode string) error
@@ -127,7 +129,7 @@ func SetWallpaperMode(mode string) error
 SetWallpaperMode sets the wallpaper mode based on the user's preference. On Windows this applies the mode via IDesktopWallpaper directly, which avoids the legacy registry write \+ reapply that would otherwise stomp on SetWallpaperFromPath's fade transition; other platforms fall back to the standard behavior.
 
 <a name="SetWallpapersPerMonitor"></a>
-## func [SetWallpapersPerMonitor](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L281>)
+## func [SetWallpapersPerMonitor](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L353>)
 
 ```go
 func SetWallpapersPerMonitor(targets []MonitorTarget) error
@@ -135,8 +137,33 @@ func SetWallpapersPerMonitor(targets []MonitorTarget) error
 
 SetWallpapersPerMonitor applies each target's Path to its DevicePath. This is always an instant swap — the native crossfade cannot target monitors individually. Every target is attempted even if one fails; the first error is returned.
 
+<a name="MonitorDetail"></a>
+## type [MonitorDetail](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L296-L301>)
+
+MonitorDetail describes one connected monitor for the \`gopaper monitors\` command: its 1\-based index \(as used in configuration.behavior.monitor / categories\[\].monitor\), device path, desktop\-coordinate bounding rectangle as arranged in Windows Display Settings \(left/top is the top\-left corner; the primary monitor sits at 0,0\), and its EDID\-reported name when that could be resolved \("" otherwise\).
+
+```go
+type MonitorDetail struct {
+    Index                    int
+    DevicePath               string
+    Left, Top, Right, Bottom int
+    Name                     string
+}
+```
+
+<a name="ListMonitorDetails"></a>
+### func [ListMonitorDetails](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L311>)
+
+```go
+func ListMonitorDetails() ([]MonitorDetail, error)
+```
+
+ListMonitorDetails returns MonitorDetail for every connected monitor, in the same order as ListMonitors. It errors on non\-Windows platforms and when the enumeration API is unavailable.
+
+Name is resolved best\-effort from the monitor's EDID data \(via WMI\) and left empty if that lookup fails or a given monitor can't be matched — a missing name never fails the call, since position/device path alone are already useful.
+
 <a name="MonitorTarget"></a>
-## type [MonitorTarget](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L264-L267>)
+## type [MonitorTarget](<https://github.com/lucasassuncao/gopaper/blob/main/internal/helper/helper.go#L277-L280>)
 
 MonitorTarget pairs a monitor's device path with the wallpaper file to apply to it.
 

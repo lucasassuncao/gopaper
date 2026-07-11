@@ -19,6 +19,7 @@ import "github.com/lucasassuncao/gopaper/internal/cmd"
 - [func InitCmd\(\) \*cobra.Command](<#InitCmd>)
 - [func ListOfCategoriesPresets\(\) \[\]string](<#ListOfCategoriesPresets>)
 - [func ListOfConfigurationPresets\(\) \[\]string](<#ListOfConfigurationPresets>)
+- [func MonitorsCmd\(\) \*cobra.Command](<#MonitorsCmd>)
 - [func NextCmd\(\) \*cobra.Command](<#NextCmd>)
 - [func ParseCategoryNames\(raw string\) \[\]string](<#ParseCategoryNames>)
 - [func PrevCmd\(\) \*cobra.Command](<#PrevCmd>)
@@ -59,6 +60,7 @@ var GopaperValidators = []editor.Validator{
 
     editor.RequiredFromMetadata(),
     editor.OneOfFromMetadata(),
+    editor.PatternFromMetadata(),
     editor.CountFromMetadata(),
     editor.UniqueFromMetadata(),
 
@@ -390,7 +392,7 @@ var GopaperValidators = []editor.Validator{
 ```
 
 <a name="CategoriesPreset"></a>
-## func [CategoriesPreset](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L271>)
+## func [CategoriesPreset](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L263>)
 
 ```go
 func CategoriesPreset(name string) []models.Categories
@@ -399,7 +401,7 @@ func CategoriesPreset(name string) []models.Categories
 
 
 <a name="ConfigurationPreset"></a>
-## func [ConfigurationPreset](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L182>)
+## func [ConfigurationPreset](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L177>)
 
 ```go
 func ConfigurationPreset(name string) *models.Configuration
@@ -446,7 +448,7 @@ func InitCmd() *cobra.Command
 InitCmd generates a configuration file
 
 <a name="ListOfCategoriesPresets"></a>
-## func [ListOfCategoriesPresets](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L275>)
+## func [ListOfCategoriesPresets](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L267>)
 
 ```go
 func ListOfCategoriesPresets() []string
@@ -455,13 +457,22 @@ func ListOfCategoriesPresets() []string
 
 
 <a name="ListOfConfigurationPresets"></a>
-## func [ListOfConfigurationPresets](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L186>)
+## func [ListOfConfigurationPresets](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/edit_presets.go#L181>)
 
 ```go
 func ListOfConfigurationPresets() []string
 ```
 
 
+
+<a name="MonitorsCmd"></a>
+## func [MonitorsCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/monitors.go#L16>)
+
+```go
+func MonitorsCmd() *cobra.Command
+```
+
+MonitorsCmd lists the connected monitors with the 1\-based index gopaper uses for configuration.behavior.monitor \("monitor1", "monitor2", ...\) and categories\[\].monitor, so users can tell which physical monitor a given index refers to.
 
 <a name="NextCmd"></a>
 ## func [NextCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/next.go#L9>)
@@ -491,7 +502,7 @@ func PrevCmd() *cobra.Command
 PrevCmd sets the previous wallpaper from history.
 
 <a name="RootCmd"></a>
-## func [RootCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/root.go#L19>)
+## func [RootCmd](<https://github.com/lucasassuncao/gopaper/blob/main/internal/cmd/root.go#L20>)
 
 ```go
 func RootCmd(g *models.Gopaper, version string) *cobra.Command

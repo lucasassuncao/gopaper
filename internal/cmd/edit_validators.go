@@ -28,6 +28,7 @@ var GopaperValidators = []editor.Validator{
 	// Enforce everything the metadata declares.
 	editor.RequiredFromMetadata(),
 	editor.OneOfFromMetadata(),
+	editor.PatternFromMetadata(),
 	editor.CountFromMetadata(),
 	editor.UniqueFromMetadata(),
 

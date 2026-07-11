@@ -130,7 +130,7 @@ func TestGetRandomCategory_ReturnsValidEntry(t *testing.T) {
 // --- GetRandomFile ---
 
 func TestGetRandomFile_Empty(t *testing.T) {
-	_, err := GetRandomFile([]os.DirEntry{}, nil)
+	_, err := GetRandomFile([]os.DirEntry{}, nil, "")
 	if err == nil {
 		t.Error("expected error for empty input, got nil")
 	}
@@ -141,7 +141,7 @@ func TestGetRandomFile_OnlyDirectories(t *testing.T) {
 		mockDirEntry{name: "subdir1", isDir: true},
 		mockDirEntry{name: "subdir2", isDir: true},
 	}
-	_, err := GetRandomFile(entries, nil)
+	_, err := GetRandomFile(entries, nil, "")
 	if err == nil {
 		t.Error("expected error when only directories are present, got nil")
 	}
@@ -153,7 +153,7 @@ func TestGetRandomFile_OnlyUnsupportedExtensions(t *testing.T) {
 		mockDirEntry{name: "data.json", isDir: false},
 		mockDirEntry{name: "image.bmp", isDir: false},
 	}
-	_, err := GetRandomFile(entries, nil)
+	_, err := GetRandomFile(entries, nil, "")
 	if err == nil {
 		t.Error("expected error when no supported image files are present, got nil")
 	}
@@ -162,7 +162,7 @@ func TestGetRandomFile_OnlyUnsupportedExtensions(t *testing.T) {
 func TestGetRandomFile_ReturnsImageFile(t *testing.T) {
 	for _, name := range []string{"image.jpg", "photo.jpeg", "wall.png", "bg.webp"} {
 		entries := []os.DirEntry{mockDirEntry{name: name, isDir: false}}
-		got, err := GetRandomFile(entries, nil)
+		got, err := GetRandomFile(entries, nil, "")
 		if err != nil {
 			t.Fatalf("unexpected error for %s: %v", name, err)
 		}
@@ -177,7 +177,7 @@ func TestGetRandomFile_CaseInsensitiveExtension(t *testing.T) {
 		mockDirEntry{name: "wall.JPG", isDir: false},
 		mockDirEntry{name: "photo.PNG", isDir: false},
 	}
-	_, err := GetRandomFile(entries, nil)
+	_, err := GetRandomFile(entries, nil, "")
 	if err != nil {
 		t.Errorf("expected .JPG/.PNG to be accepted, got error: %v", err)
 	}
@@ -191,7 +191,7 @@ func TestGetRandomFile_NeverReturnsDirectoryOrUnsupported(t *testing.T) {
 		mockDirEntry{name: "another.jpg", isDir: false},
 	}
 	for range 50 {
-		name, err := GetRandomFile(entries, nil)
+		name, err := GetRandomFile(entries, nil, "")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -212,7 +212,7 @@ func TestGetRandomFile_MatchFilterExcludesNonMatching(t *testing.T) {
 	}
 
 	for range 20 {
-		name, err := GetRandomFile(entries, filter)
+		name, err := GetRandomFile(entries, filter, "")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -233,7 +233,7 @@ func TestGetRandomFile_SizeFilterExcludesTooSmall(t *testing.T) {
 	}
 
 	for range 20 {
-		name, err := GetRandomFile(entries, filter)
+		name, err := GetRandomFile(entries, filter, "")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -254,7 +254,7 @@ func TestGetRandomFile_AgeFilterExcludesTooNew(t *testing.T) {
 	}
 
 	for range 20 {
-		name, err := GetRandomFile(entries, filter)
+		name, err := GetRandomFile(entries, filter, "")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -271,7 +271,7 @@ func TestGetRandomFile_FilterExcludingEverythingReturnsError(t *testing.T) {
 		t.Fatalf("unexpected compile error: %v", err)
 	}
 
-	if _, err := GetRandomFile(entries, filter); err == nil {
+	if _, err := GetRandomFile(entries, filter, ""); err == nil {
 		t.Error("expected error when the filter excludes every candidate, got nil")
 	}
 }

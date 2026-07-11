@@ -61,11 +61,11 @@ configuration:
 categories:
   - name: "default"
     source: "C:\\wallpapers"
-    mode: "crop"        # crop, tile, stretch, span, fit, center
     enabled: true
   - name: "nature"
     source: "D:/Images/Nature"
-    mode: "fit"
+    behavior:
+      mode: "fit"        # overrides the crop default just for this category
     enabled: true
     filter:              # optional: narrow which files in source are eligible
       match:
@@ -115,7 +115,6 @@ configuration:
 categories:
   - name: "Saltern Study"
     source: "C:\\Walls\\DynamicWallpapers\\Saltern Study"
-    mode: crop
     enabled: true
     variants:
       - { source: "./day", condition: day }
@@ -144,11 +143,10 @@ categories:
       query: "landscape"
       purity: sfw          # sfw (default) | sketchy | nsfw
       cache-limit: 100
-    mode: crop
     enabled: true
 ```
 
-### Behavior (transition & multi-monitor)
+### Behavior (transition, mode & monitor)
 
 `configuration.behavior` sets how changes are applied; any category can override it with
 its own `behavior` block, which wins when that category is drawn:
@@ -157,22 +155,34 @@ its own `behavior` block, which wins when that category is drawn:
 configuration:
   behavior:
     transition: fade           # fade | none
-    multi-monitor: per-monitor # same | per-monitor
+    mode: crop                 # crop | tile | stretch | span | fit | center
+    monitor: per-monitor       # all | per-monitor | monitor1, monitor2, ...
 
 categories:
   - name: "Saltern Study"      # when drawn, mirrors on all monitors WITH fade
     behavior:
-      multi-monitor: same
+      monitor: all
     # ...
   - name: "Custom Selection"   # participates in per-monitor draws (instant)
-    monitor: 1                 # optional: pin to monitor 1
+    monitor: 1                 # optional: restricts it to monitor 1 within that draw
+    # ...
+  - name: "Desk Monitor Only"  # always goes straight to monitor 2, others untouched
+    behavior:
+      monitor: monitor2
     # ...
 ```
 
-**The drawn category decides the run:** effective `same` mirrors one image everywhere (fade
+**The drawn category decides the run:** effective `all` mirrors one image everywhere (fade
 works); effective `per-monitor` gives each monitor its own draw among per-monitor-eligible
-categories — always instant, since the native crossfade can't target monitors individually.
-See [docs/CONFIGURATION.md](docs/CONFIGURATION.md) for details and limitations.
+categories; effective `monitorN` sends this category's own image straight to that monitor,
+leaving the rest as they were. `per-monitor` and `monitorN` are always instant, since the
+native crossfade can't target monitors individually. See
+[docs/CONFIGURATION.md](docs/CONFIGURATION.md) for details and limitations.
+
+Not sure which index is which physical screen? Run `gopaper monitors` — it lists each
+connected monitor's 1-based index, EDID name, and desktop position/size, so you can pick the
+right `monitorN` before writing it into the config. See
+[docs/COMMANDS.md](docs/COMMANDS.md#gopaper-monitors).
 
 ## Editing the Configuration
 

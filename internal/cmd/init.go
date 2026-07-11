@@ -195,10 +195,10 @@ func collectCategories() []models.Categories {
 			Show()
 
 		category := models.Categories{
-			Name:    name,
-			Enabled: enabled,
-			Source:  source,
-			Mode:    mode,
+			Name:     name,
+			Enabled:  enabled,
+			Source:   source,
+			Behavior: &models.Behavior{Mode: mode},
 		}
 
 		categories = append(categories, category)
@@ -228,7 +228,6 @@ func getDefaultCategory() models.Categories {
 		Name:    "Custom Selection",
 		Enabled: true,
 		Source:  getDefaultSourcePath("CustomSelection"),
-		Mode:    "crop",
 	}
 }
 
@@ -257,12 +256,12 @@ func getBasicTemplate() *models.Config {
 				Level:      "info",
 				ShowCaller: false,
 			},
+			Behavior: &models.Behavior{Mode: "crop"},
 		},
 		Categories: []models.Categories{
 			{
 				Name:    "Custom Selection",
 				Source:  getDefaultSourcePath("CustomSelection"),
-				Mode:    "crop",
 				Enabled: true,
 			},
 		},
@@ -279,66 +278,57 @@ func getFullTemplate() *models.Config {
 				Level:      "info",
 				ShowCaller: false,
 			},
+			Behavior: &models.Behavior{Mode: "crop"},
 		},
 		Categories: []models.Categories{
 			{
 				Name:    "Custom Selection",
 				Source:  getDefaultSourcePath("CustomSelection"),
-				Mode:    "crop",
 				Enabled: true,
 			},
 			{
 				Name:    "Wallhaven",
 				Source:  getDefaultSourcePath("Wallhaven"),
-				Mode:    "crop",
 				Enabled: false,
 			},
 			{
 				Name:    "Wallbase",
 				Source:  getDefaultSourcePath("Wallbase"),
-				Mode:    "crop",
 				Enabled: false,
 			},
 			{
 				Name:    "Wallpapers Wide",
 				Source:  getDefaultSourcePath("WallpapersWide"),
-				Mode:    "crop",
 				Enabled: false,
 			},
 			{
 				Name:    "UHD Wallpaper",
 				Source:  getDefaultSourcePath("UHDPaper"),
-				Mode:    "crop",
 				Enabled: false,
 			},
 			{
 				Name:    "Looking at Viewer",
 				Source:  filepath.Join(getDefaultSourcePath("Wallhaven"), "Girls", "Looking At Viewer"),
-				Mode:    "crop",
 				Enabled: false,
 			},
 			{
 				Name:    "Girls",
 				Source:  filepath.Join(getDefaultSourcePath("Wallhaven"), "Girls"),
-				Mode:    "crop",
 				Enabled: false,
 			},
 			{
 				Name:    "Better Sonoma",
 				Source:  filepath.Join(getDefaultSourcePath("OS"), "Apple", "BasicAppleGuy", "Better Sonoma"),
-				Mode:    "crop",
 				Enabled: false,
 			},
 			{
 				Name:    "Saltern Study",
 				Source:  filepath.Join(getDefaultSourcePath("OS"), "Apple", "BasicAppleGuy", "Saltern Study"),
-				Mode:    "crop",
 				Enabled: false,
 			},
 			{
 				Name:    "Saltern Study Night",
 				Source:  filepath.Join(getDefaultSourcePath("OS"), "Apple", "BasicAppleGuy", "Saltern Study Night"),
-				Mode:    "crop",
 				Enabled: false,
 			},
 		},
@@ -372,7 +362,7 @@ func printCategorySummary(category models.Categories) {
 
 	pterm.Printf("  Name:    %s\n", pterm.Cyan(category.Name))
 	pterm.Printf("  Enabled: %s\n", pterm.Magenta(enabledStr))
-	pterm.Printf("  Mode:    %s\n", pterm.Yellow(category.Mode))
+	pterm.Printf("  Mode:    %s\n", pterm.Yellow(category.ModeOverride()))
 	pterm.Printf("  Source:  %s\n", pterm.Yellow(category.Source))
 }
 

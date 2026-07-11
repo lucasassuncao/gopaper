@@ -26,3 +26,11 @@ func monitorDevicePaths() ([]string, error) {
 func setWallpaperOnMonitor(devicePath, fullPath string) error {
 	return errors.New("per-monitor wallpapers are only supported on Windows")
 }
+
+func monitorDetails() ([]MonitorDetail, error) {
+	return nil, errors.New("monitor enumeration is only supported on Windows")
+}
+
+func monitorNames() (map[string]string, error) {
+	return nil, errors.New("monitor enumeration is only supported on Windows")
+}
